@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <title>BioViewer</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; overflow: hidden; }
+            #app { width: 100%; height: 100%; }
+        </style>
+        <link rel="stylesheet" type="text/css" href="${cssUri}" />
+    </head>
+    <body>
+        <div id="app"></div>
+        <script nonce="${nonce}" type="text/javascript" src="${jsUri}"></script>
+        <script nonce="${nonce}" type="text/javascript">
+            molstar.Viewer.create('app', {
+                layoutShowControls: true,
+                viewportShowExpand: false,
+                pdbProvider: 'pdbe',
+                emdbProvider: 'pdbe',
+            }).then(viewer => {
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    console.log('Received message:', message);
+                    switch (message.command) {
+                        case 'loadPdb':
+                            viewer.loadPdb(message.accession);
+                            break;
+                        case 'loadAlphaFoldDb':
+                            viewer.loadAlphaFoldDb(message.accession);
+                            break;
+                        case 'loadEmdb':
+                            viewer.loadEmdb('emd-' + message.accession);
+                            break;
+                        case 'appendStructure':
+                            viewer.loadStructureFromUrl(message.url, message.format)
+                                .catch(error => console.error('Error loading structure:', error));
+                            break;
+                        case 'appendVolume':
+                            viewer.loadVolumeFromUrl(
+                                { url: message.url, format: message.format, isBinary: message.isBinary },
+                                [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]
+                            ).catch(error => console.error('Error loading volume:', error));
+                            break;
+                        default:
+                            console.log('Unknown command:', message.command);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

@@ -7,102 +7,39 @@ export class BioViewerPanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
 
-  static getCurrentPanel(): BioViewerPanel | undefined {
-    return this.currentPanel;
-  }
-
-  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, accession: string | undefined, clickedFiles: vscode.Uri[] | undefined) {
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
-    if (this._panel) {
-      this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-      
-      if (accession !== undefined) {
-        this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri, accession);
+    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+  }
+
+  public static createOrShow(extensionUri: vscode.Uri, title: string = "BioViewer"): BioViewerPanel {
+    if (BioViewerPanel.currentPanel) {
+      BioViewerPanel.currentPanel._panel.reveal();
+      return BioViewerPanel.currentPanel;
+    }
+
+    const panel = vscode.window.createWebviewPanel(
+      "BioViewer",
+      title,
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true
       }
-      if (clickedFiles !== undefined) {
-        this._panel.webview.html = this._getWebviewContentForFiles(this._panel.webview, extensionUri, clickedFiles);
-      }
-    }
+    );
+
+    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri);
+    return BioViewerPanel.currentPanel;
   }
 
-  public static renderStructure(extensionUri: vscode.Uri, accession: string | undefined) {
-    const windowName = "Protein Viewer - " + accession;
-    const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
-      enableScripts: true,
-      retainContextWhenHidden: true
-    });
-    if (accession?.length === 4) {
-      var loadCommand = `viewer.loadPdb('${accession}');`;
-    } else {
-      var loadCommand = `viewer.loadAlphaFoldDb('${accession}');`;
-    }
-    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, loadCommand, undefined);
+  public loadContent(command: string, params: any) {
+    this._panel.webview.postMessage({ command, ...params });
   }
-
-  public static renderEMDB(extensionUri: vscode.Uri, accession: string | undefined) {
-    const windowName = "EMDB Viewer - " + accession;
-    const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
-      enableScripts: true,
-      retainContextWhenHidden: true
-    });
-    var loadCommand = `viewer.loadEmdb('emd-${accession}');`;
-    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, loadCommand, undefined);
-  }
-
-  public static renderFromFiles(extensionUri: vscode.Uri, clickedFiles: vscode.Uri[]) {
-    if (!clickedFiles || clickedFiles.length === 0) {
-        vscode.window.showErrorMessage('No files provided to BioViewer');
-        return;
-    }
-
-    const fnames = clickedFiles.map((clickedFile) => clickedFile.path.split('/').pop());
-    const windowName = "BioViewer - " + fnames.join(" - ");
-    const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
-      enableScripts: true,
-      retainContextWhenHidden: true
-    });
-
-    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, undefined, clickedFiles);
-  }
-
-  public _appendStructureOrVolume(extensionUri: vscode.Uri, fileUri: vscode.Uri) {
-    const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
-    const webviewUri = this._panel.webview.asWebviewUri(fileUri);
-
-    console.info('fileExtension: ', fileExtension);
-    console.info('webviewUri: ', webviewUri);
-  
-    let command = '';
-    let format = '';
-  
-    if (['.pdb', '.cif', '.mmcif', '.mcif'].includes(fileExtension)) {
-      command = 'appendStructure';
-      format = 'mmcif';
-    } else if (['.mrc', '.map', '.ccp4'].includes(fileExtension)) {
-      command = 'appendVolume';
-      format = 'ccp4';
-    } else {
-      throw new Error(`Unsupported file type: ${fileExtension}`);
-    }
-  
-    // Send the load command to the webview
-    this._panel.webview.postMessage({ 
-      command: command, 
-      url: webviewUri.toString(),
-      format: format,
-      isBinary: command === 'appendVolume',
-      label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
-    });
-  }
-
 
   public dispose() {
     BioViewerPanel.currentPanel = undefined;
-
-    if (this._panel) {
-      this._panel.dispose();
-    }
-
+    this._panel.dispose();
     while (this._disposables.length) {
       const disposable = this._disposables.pop();
       if (disposable) {
@@ -111,8 +48,8 @@ export class BioViewerPanel {
     }
   }
 
-  private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, accession: string | undefined) {
-    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer-single.html');
+  private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
+    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer.html');
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
     const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.css'));
@@ -122,62 +59,6 @@ export class BioViewerPanel {
     htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
     htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
     htmlContent = htmlContent.replace('${nonce}', nonce.toString());
-    htmlContent = htmlContent.replace('${accession}', accession || '');
-
-    return htmlContent;
-  }
-
-  private _getWebviewContentForFiles(webview: vscode.Webview, extensionUri: vscode.Uri, clickedFiles: vscode.Uri[]) {
-    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer-multiple.html');
-    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-
-    const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.css'));
-    const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.js'));
-    const nonce = this.getNonce();
-
-    const bioContents = clickedFiles.map((clickedFile) => 
-        webview.asWebviewUri(vscode.Uri.file(clickedFile.fsPath)).toString()
-      );
-    const extensions = clickedFiles.map((clickedFile) => clickedFile.path.split('.').pop()?.toLocaleLowerCase());
-    let loadCommands: String[] = [];
-    for (let i = 0; i < bioContents.length; i++) {
-      const bioContent = bioContents[i];
-      var extension = extensions[i] ?? 'mmcif';
-      console.info('extension: ', extension);
-
-      if (['cif', 'mmcif', 'mcif'].includes(extension.toLowerCase())) {
-        extension = 'mmcif';
-        console.info('bioContent: ', bioContent);
-        console.info('extension: ', extension);
-        const label = path.basename(bioContent, path.extname(bioContent));
-        console.info('label: ', label);
-        loadCommands.push(
-          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}');`
-        );
-      } else if (['mrc', 'map', 'ccp4'].includes(extension.toLowerCase())) {
-        extension = 'ccp4';
-        console.info('bioContent: ', bioContent);
-        console.info('extension: ', extension);
-
-        // get file name from bioContent as entryId
-        const entryId = path.basename(bioContent, path.extname(bioContent));
-        console.info('entryId: ', entryId);
-
-        loadCommands.push(`
-            viewer.loadVolumeFromUrl(
-              { url: '${bioContent}', format: '${extension}', isBinary: true },
-              [{ type: 'absolute', value: 0.1, alpha: 0.34, entryId: '${entryId}'}]
-            ).catch(error => console.error('Error loading volume:', error));
-          `);
-      }
-    }
-
-    console.info('loadCommands: ', loadCommands);
-
-    htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
-    htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
-    htmlContent = htmlContent.replace('${nonce}', nonce.toString());
-    htmlContent = htmlContent.replace('${loadCommands}', loadCommands.join('\n'));
 
     return htmlContent;
   }
@@ -189,5 +70,9 @@ export class BioViewerPanel {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+  }
+
+  public getWebviewUri(uri: vscode.Uri): vscode.Uri {
+    return this._panel.webview.asWebviewUri(uri);
   }
 }
