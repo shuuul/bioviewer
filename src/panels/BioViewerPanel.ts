@@ -15,6 +15,7 @@ export class BioViewerPanel {
     this._panel = panel;
     if (this._panel) {
       this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+      
       if (accession !== undefined) {
         this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri, accession);
       }
@@ -55,7 +56,7 @@ export class BioViewerPanel {
     }
 
     const fnames = clickedFiles.map((clickedFile) => clickedFile.path.split('/').pop());
-    const windowName = "Protein Viewer - " + fnames.join(" - ");
+    const windowName = "BioViewer - " + fnames.join(" - ");
     const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
       enableScripts: true,
       retainContextWhenHidden: true
@@ -76,7 +77,7 @@ export class BioViewerPanel {
   
     if (['.pdb', '.cif', '.mmcif', '.mcif'].includes(fileExtension)) {
       command = 'appendStructure';
-      format = fileExtension === '.pdb' ? 'pdb' : 'mmcif';
+      format = 'mmcif';
     } else if (['.mrc', '.map', '.ccp4'].includes(fileExtension)) {
       command = 'appendVolume';
       format = 'ccp4';
@@ -89,7 +90,8 @@ export class BioViewerPanel {
       command: command, 
       url: webviewUri.toString(),
       format: format,
-      isBinary: command === 'appendVolume'
+      isBinary: command === 'appendVolume',
+      label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
     });
   }
 
@@ -150,7 +152,7 @@ export class BioViewerPanel {
         const label = path.basename(bioContent, path.extname(bioContent));
         console.info('label: ', label);
         loadCommands.push(
-          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}', label='${label}');`
+          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}');`
         );
       } else if (['mrc', 'map', 'ccp4'].includes(extension.toLowerCase())) {
         extension = 'ccp4';

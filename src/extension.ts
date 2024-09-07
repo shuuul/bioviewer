@@ -18,7 +18,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const helloCommand = vscode.commands.registerCommand("bioviewer.start", async () => {
 		const fileType = await showSelectionBox();
 		if (fileType === 'PDB') {
-			const accession = await showInputBox('Enter a PDB accession (e.g. 1abc)');
+			const accession = await showInputBox('Enter a PDB accession (e.g. 6mru)');
 			if (accession) {
 				console.log(accession);
 				BioViewerPanel.renderStructure(context.extensionUri, accession);

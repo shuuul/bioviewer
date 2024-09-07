@@ -74,6 +74,28 @@
                 preferWebgl1: preferWebgl1,
             }).then(viewer => {
                 ${accession}
+
+                // Add this message listener
+                window.addEventListener('message', event => {
+                    const message = event.data;
+                    console.log('Received message:', message);
+                    switch (message.command) {
+                        case 'appendStructure':
+                            console.log('Loading structure:', message.url, message.format);
+                            viewer.loadStructureFromUrl(url=message.url, format=message.format)
+                                .catch(error => console.error('Error loading structure:', error));
+                            break;
+                        case 'appendVolume':
+                            console.log('Loading volume:', message.url, message.format);
+                            viewer.loadVolumeFromUrl(
+                                { url: message.url, format: message.format, isBinary: message.isBinary },
+                                [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]
+                            ).catch(error => console.error('Error loading volume:', error));
+                            break;
+                        default:
+                            console.log('Unknown command:', message.command);
+                    }
+                });
             });
         </script>
     </body>
