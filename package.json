@@ -7,17 +7,40 @@
     "vscode": "^1.93.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "bioviewer.helloWorld",
-        "title": "Hello World"
+        "command": "bioviewer.start",
+        "title": "Start BioViewer"
+      },
+      {
+        "command": "bioviewer.activateFromFiles",
+        "title": "Open in BioViewer"
+      },
+      {
+        "command": "bioviewer.activateFromFolder",
+        "title": "Open Folder in BioViewer"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc)$/i",
+          "command": "bioviewer.activateFromFiles",
+          "group": "navigation"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "bioviewer.activateFromFolder",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -34,16 +57,20 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.93.0",
     "@types/mocha": "^10.0.7",
     "@types/node": "20.x",
+    "@types/vscode": "^1.93.0",
     "@typescript-eslint/eslint-plugin": "^8.3.0",
     "@typescript-eslint/parser": "^8.3.0",
-    "eslint": "^9.9.1",
-    "esbuild": "^0.23.1",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.5.4",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "esbuild": "^0.23.1",
+    "eslint": "^9.9.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "molstar": "^4.6.0",
+    "molstar-volseg": "^0.0.15"
   }
 }
