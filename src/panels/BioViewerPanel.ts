@@ -7,6 +7,10 @@ export class BioViewerPanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
 
+  static getCurrentPanel(): BioViewerPanel | undefined {
+    return this.currentPanel;
+  }
+
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, accession: string | undefined, clickedFiles: vscode.Uri[] | undefined) {
     this._panel = panel;
     if (this._panel) {
@@ -59,6 +63,36 @@ export class BioViewerPanel {
 
     BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, undefined, clickedFiles);
   }
+
+  public _appendStructureOrVolume(extensionUri: vscode.Uri, fileUri: vscode.Uri) {
+    const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
+    const webviewUri = this._panel.webview.asWebviewUri(fileUri);
+
+    console.info('fileExtension: ', fileExtension);
+    console.info('webviewUri: ', webviewUri);
+  
+    let command = '';
+    let format = '';
+  
+    if (['.pdb', '.cif', '.mmcif', '.mcif'].includes(fileExtension)) {
+      command = 'appendStructure';
+      format = fileExtension === '.pdb' ? 'pdb' : 'mmcif';
+    } else if (['.mrc', '.map', '.ccp4'].includes(fileExtension)) {
+      command = 'appendVolume';
+      format = 'ccp4';
+    } else {
+      throw new Error(`Unsupported file type: ${fileExtension}`);
+    }
+  
+    // Send the load command to the webview
+    this._panel.webview.postMessage({ 
+      command: command, 
+      url: webviewUri.toString(),
+      format: format,
+      isBinary: command === 'appendVolume'
+    });
+  }
+
 
   public dispose() {
     BioViewerPanel.currentPanel = undefined;

@@ -74,7 +74,45 @@ export async function activate(context: vscode.ExtensionContext) {
 		});
 	});
 
-	context.subscriptions.push(helloCommand, activateFromFiles, activateFromFolder);
+	const appendFileCommand = vscode.commands.registerCommand("bioviewer.appendFile", async (fileUri?: vscode.Uri) => {
+		let filesToAppend: vscode.Uri[] = [];
+	  
+		if (!fileUri) {
+		  // If called from command palette without a file
+		  console.info('Appending file from command palette');
+		  const options: vscode.OpenDialogOptions = {
+			canSelectMany: true,
+			openLabel: 'Append',
+			filters: {
+			  'Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4']
+			}
+		  };
+	  
+		  filesToAppend = await vscode.window.showOpenDialog(options) || [];
+		  console.log('filesToAppend:', filesToAppend);
+		  if (filesToAppend.length === 0) {
+			vscode.window.showInformationMessage('No files selected to append');
+			return;
+		  }
+		} else {
+			console.info('Appending file from explorer');
+			filesToAppend = [fileUri];
+		}
+	  
+		const currentPanel = BioViewerPanel.getCurrentPanel();
+		if (!currentPanel) {
+			console.info('No active BioViewer panel to append to');
+			vscode.window.showErrorMessage('No active BioViewer panel to append to');
+			return;
+		}
+		
+		for (const file of filesToAppend) {
+			console.info('Appending file:', file);
+			currentPanel._appendStructureOrVolume(context.extensionUri, file);
+		}
+	});
+
+	context.subscriptions.push(helloCommand, activateFromFiles, activateFromFolder, appendFileCommand);
 
 }
 

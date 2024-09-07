@@ -25,6 +25,10 @@
       {
         "command": "bioviewer.activateFromFolder",
         "title": "Open Folder in BioViewer"
+      },
+      {
+        "command": "bioviewer.appendFile",
+        "title": "Append File to BioViewer"
       }
     ],
     "menus": {
@@ -37,6 +41,11 @@
         {
           "when": "explorerResourceIsFolder",
           "command": "bioviewer.activateFromFolder",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)$/",
+          "command": "bioviewer.appendFile",
           "group": "navigation"
         }
       ]
