@@ -8,7 +8,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	console.log('BioViewer extension is now active');
 
 	async function showSelectionBox() {
-		const options = ['PDB', 'AlphaFoldDB (UniProt)'];
+		const options = ['PDB', 'AlphaFoldDB (UniProt)', 'EMDB'];
 		const selection = await vscode.window.showQuickPick(options, {
 			placeHolder: 'Select file type',
 		});
@@ -18,16 +18,22 @@ export async function activate(context: vscode.ExtensionContext) {
 	const helloCommand = vscode.commands.registerCommand("bioviewer.start", async () => {
 		const fileType = await showSelectionBox();
 		if (fileType === 'PDB') {
-			const accession = await showInputBox();
+			const accession = await showInputBox('Enter a PDB accession (e.g. 1abc)');
 			if (accession) {
 				console.log(accession);
-				BioViewerPanel.render(context.extensionUri, accession);
+				BioViewerPanel.renderStructure(context.extensionUri, accession);
 			}
 		} else if (fileType === 'AlphaFoldDB (UniProt)') {
-			const accession = await showInputBox();
+			const accession = await showInputBox('Enter a UniProt accession for AlphaFoldDB (e.g. P68871)');
 			if (accession) {
 				console.log(accession);
-				BioViewerPanel.render(context.extensionUri, accession);
+				BioViewerPanel.renderStructure(context.extensionUri, accession);
+			}
+		} else if (fileType === 'EMDB') {
+			const accession = await showInputBox('Enter an EMDB accession (e.g. 0006)');
+			if (accession) {
+				console.log(accession);
+				BioViewerPanel.renderEMDB(context.extensionUri, accession);
 			}
 		}
 	});
@@ -75,37 +81,10 @@ export async function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
-async function showInputBox() {
+async function showInputBox(notification: string) {
 	const accession = await vscode.window.showInputBox({
 		value: '',
-		placeHolder: 'Enter a PDB or AlphaFoldDB (UniProt) accession',
+		placeHolder: notification,
 	});
 	return accession;
-}
-
-async function showSequenceInputBox() {
-	const sequence = await vscode.window.showInputBox({
-		value: '',
-		placeHolder: 'Enter a protein sequence',
-	});
-	return sequence;
-}
-
-async function writeFoldToFile(file_contents: string) {
-	const time = new Date().getTime();
-	const fname = "/esmfold_" + time.toString() + ".pdb";
-
-	const setting: vscode.Uri = vscode.Uri.parse("untitled:" + (vscode.workspace.workspaceFolders?.[0].uri.fsPath || '') + fname);
-	await vscode.workspace.openTextDocument(setting).then((a: vscode.TextDocument) => {
-		vscode.window.showTextDocument(a, 1, false).then(e => {
-			e.edit(edit => {
-				edit.insert(new vscode.Position(0, 0), file_contents);
-				a.save();
-			});
-		});
-	});
-
-	console.log("wrote to test file.");
-	console.log(setting);
-	return setting.fsPath;
 }

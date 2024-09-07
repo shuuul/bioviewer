@@ -20,7 +20,7 @@ export class BioViewerPanel {
     }
   }
 
-  public static render(extensionUri: vscode.Uri, accession: string | undefined) {
+  public static renderStructure(extensionUri: vscode.Uri, accession: string | undefined) {
     const windowName = "Protein Viewer - " + accession;
     const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
       enableScripts: true,
@@ -31,6 +31,16 @@ export class BioViewerPanel {
     } else {
       var loadCommand = `viewer.loadAlphaFoldDb('${accession}');`;
     }
+    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, loadCommand, undefined);
+  }
+
+  public static renderEMDB(extensionUri: vscode.Uri, accession: string | undefined) {
+    const windowName = "EMDB Viewer - " + accession;
+    const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
+      enableScripts: true,
+      retainContextWhenHidden: true
+    });
+    var loadCommand = `viewer.loadEmdb('emd-${accession}');`;
     BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri, loadCommand, undefined);
   }
 
@@ -75,7 +85,7 @@ export class BioViewerPanel {
 
     htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
     htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
-    htmlContent = htmlContent.replace('${nonce}', nonce);
+    htmlContent = htmlContent.replace('${nonce}', nonce.toString());
     htmlContent = htmlContent.replace('${accession}', accession || '');
 
     return htmlContent;
@@ -89,34 +99,48 @@ export class BioViewerPanel {
     const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.js'));
     const nonce = this.getNonce();
 
-    const bioContents = clickedFiles.map((clickedFile) => webview.asWebviewUri(clickedFile));
+    const bioContents = clickedFiles.map((clickedFile) => 
+        webview.asWebviewUri(vscode.Uri.file(clickedFile.fsPath)).toString()
+      );
     const extensions = clickedFiles.map((clickedFile) => clickedFile.path.split('.').pop()?.toLocaleLowerCase());
     let loadCommands: String[] = [];
     for (let i = 0; i < bioContents.length; i++) {
       const bioContent = bioContents[i];
       var extension = extensions[i] ?? 'mmcif';
-      console.log('extension: ', extension);
+      console.info('extension: ', extension);
 
       if (['cif', 'mmcif', 'mcif'].includes(extension.toLowerCase())) {
         extension = 'mmcif';
-        console.log('bioContent: ', bioContent);
-        console.log('extension: ', extension);
+        console.info('bioContent: ', bioContent);
+        console.info('extension: ', extension);
+        const label = path.basename(bioContent, path.extname(bioContent));
+        console.info('label: ', label);
         loadCommands.push(
-          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}');`
+          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}', label='${label}');`
         );
       } else if (['mrc', 'map', 'ccp4'].includes(extension.toLowerCase())) {
         extension = 'ccp4';
-        console.log('bioContent: ', bioContent);
-        console.log('extension: ', extension);
-        loadCommands.push(
-          `viewer.loadVolumeFromUrl({'${bioContent}', format='${extension}', isBinary=false}, [{type: 'absolute', color: 0x33BB33, alpha: 0.34}]);`
-        );
+        console.info('bioContent: ', bioContent);
+        console.info('extension: ', extension);
+
+        // get file name from bioContent as entryId
+        const entryId = path.basename(bioContent, path.extname(bioContent));
+        console.info('entryId: ', entryId);
+
+        loadCommands.push(`
+            viewer.loadVolumeFromUrl(
+              { url: '${bioContent}', format: '${extension}', isBinary: true },
+              [{ type: 'absolute', value: 0.1, alpha: 0.34, entryId: '${entryId}'}]
+            ).catch(error => console.error('Error loading volume:', error));
+          `);
       }
     }
 
+    console.info('loadCommands: ', loadCommands);
+
     htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
     htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
-    htmlContent = htmlContent.replace('${nonce}', nonce);
+    htmlContent = htmlContent.replace('${nonce}', nonce.toString());
     htmlContent = htmlContent.replace('${loadCommands}', loadCommands.join('\n'));
 
     return htmlContent;

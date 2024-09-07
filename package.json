@@ -17,6 +17,14 @@
       {
         "command": "bioviewer.start",
         "title": "Start BioViewer"
+      },
+      {
+        "command": "bioviewer.activateFromFiles",
+        "title": "Open in BioViewer"
+      },
+      {
+        "command": "bioviewer.activateFromFolder",
+        "title": "Open Folder in BioViewer"
       }
     ],
     "menus": {
@@ -62,7 +70,8 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "molstar": "^4.6.0"
+    "molstar": "^4.6.0",
+    "molstar-volseg": "^0.0.15"   
   },
   "files": [
     "dist",
