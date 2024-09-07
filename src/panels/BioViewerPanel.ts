@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class BioViewerPanel {
   public static currentPanel: BioViewerPanel | undefined;
@@ -7,15 +9,15 @@ export class BioViewerPanel {
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, accession: string | undefined, clickedFiles: vscode.Uri[] | undefined) {
     this._panel = panel;
-    this._panel.onDidDispose(this.dispose, null, this._disposables);
-    if (accession !== undefined) {
-      this._panel.webview.html = this._getWebviewContent(panel.webview, extensionUri, accession);
-    };
-
-    if (clickedFiles !== undefined) {
-      this._panel.webview.html = this._getWebviewContentForFiles(panel.webview, extensionUri, clickedFiles);
-    };
-
+    if (this._panel) {
+      this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+      if (accession !== undefined) {
+        this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri, accession);
+      }
+      if (clickedFiles !== undefined) {
+        this._panel.webview.html = this._getWebviewContentForFiles(this._panel.webview, extensionUri, clickedFiles);
+      }
+    }
   }
 
   public static render(extensionUri: vscode.Uri, accession: string | undefined) {
@@ -33,6 +35,11 @@ export class BioViewerPanel {
   }
 
   public static renderFromFiles(extensionUri: vscode.Uri, clickedFiles: vscode.Uri[]) {
+    if (!clickedFiles || clickedFiles.length === 0) {
+        vscode.window.showErrorMessage('No files provided to BioViewer');
+        return;
+    }
+
     const fnames = clickedFiles.map((clickedFile) => clickedFile.path.split('/').pop());
     const windowName = "Protein Viewer - " + fnames.join(" - ");
     const panel = vscode.window.createWebviewPanel("BioViewer", windowName, vscode.ViewColumn.One, {
@@ -46,7 +53,9 @@ export class BioViewerPanel {
   public dispose() {
     BioViewerPanel.currentPanel = undefined;
 
-    this._panel.dispose();
+    if (this._panel) {
+      this._panel.dispose();
+    }
 
     while (this._disposables.length) {
       const disposable = this._disposables.pop();
@@ -57,237 +66,68 @@ export class BioViewerPanel {
   }
 
   private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, accession: string | undefined) {
+    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer-single.html');
+    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
     const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.css'));
     const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.js'));
-    // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
-    return /*html*/ `
-    <!DOCTYPE html>
-    <html lang="en">
-        <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-            <link rel="icon" href="./favicon.ico" type="image/x-icon">
-            <title>Mol* Viewer</title>
-            <style>
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                hr {
-                    margin: 10px;
-                }
-                h1, h2, h3, h4, h5 {
-                    margin-top: 5px;
-                    margin-bottom: 3px;
-                }
-                button {
-                    padding: 2px;
-                }
-                #app {
-                    position: absolute;
-                    left: 100px;
-                    top: 100px;
-                    width: 800px;
-                    height: 600px;
-                }
-            </style>
-            <link rel="stylesheet" type="text/css" href="${cssUri}" />
-        </head>
-        <body>
-            <div id="app"></div>
-            <script type="text/javascript" src="${jsUri}"></script>
-            <script type="text/javascript">
-                function getParam(name, regex) {
-                    var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
-                    return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
-                }
-                var debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
-                if (debugMode) molstar.setDebugMode(debugMode, debugMode);
+    const nonce = this.getNonce();
 
-                var hideControls = getParam('hide-controls', '[^&]+').trim() === '1';
-                var collapseLeftPanel = getParam('collapse-left-panel', '[^&]+').trim() === '1';
-                var pdbProvider = getParam('pdb-provider', '[^&]+').trim().toLowerCase();
-                var emdbProvider = getParam('emdb-provider', '[^&]+').trim().toLowerCase();
-                var mapProvider = getParam('map-provider', '[^&]+').trim().toLowerCase();
-                var pixelScale = getParam('pixel-scale', '[^&]+').trim();
-                var pickScale = getParam('pick-scale', '[^&]+').trim();
-                var pickPadding = getParam('pick-padding', '[^&]+').trim();
-                var disableWboit = getParam('disable-wboit', '[^&]+').trim() === '1';
-                var preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
+    htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
+    htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
+    htmlContent = htmlContent.replace('${nonce}', nonce);
+    htmlContent = htmlContent.replace('${accession}', accession || '');
 
-                molstar.Viewer.create('app', {
-                    layoutShowControls: !hideControls,
-                    viewportShowExpand: false,
-                    collapseLeftPanel: collapseLeftPanel,
-                    pdbProvider: pdbProvider || 'pdbe',
-                    emdbProvider: emdbProvider || 'pdbe',
-                    volumeStreamingServer: (mapProvider || 'pdbe') === 'rcsb'
-                        ? 'https://maps.rcsb.org'
-                        : 'https://www.ebi.ac.uk/pdbe/densities',
-                    pixelScale: parseFloat(pixelScale) || 1,
-                    pickScale: parseFloat(pickScale) || 0.25,
-                    pickPadding: isNaN(parseFloat(pickPadding)) ? 1 : parseFloat(pickPadding),
-                    enableWboit: disableWboit ? true : void 0, // use default value if disable-wboit is not set
-                    preferWebgl1: preferWebgl1,
-                }).then(viewer => {
-                    var snapshotId = getParam('snapshot-id', '[^&]+').trim();
-                    if (snapshotId) viewer.setRemoteSnapshot(snapshotId);
-    
-                    var snapshotUrl = getParam('snapshot-url', '[^&]+').trim();
-                    var snapshotUrlType = getParam('snapshot-url-type', '[^&]+').toLowerCase().trim() || 'molj';
-                    if (snapshotUrl && snapshotUrlType) viewer.loadSnapshotFromUrl(snapshotUrl, snapshotUrlType);
-    
-                    var structureUrl = getParam('structure-url', '[^&]+').trim();
-                    var structureUrlFormat = getParam('structure-url-format', '[a-z]+').toLowerCase().trim();
-                    var structureUrlIsBinary = getParam('structure-url-is-binary', '[^&]+').trim() === '1';
-                    if (structureUrl) viewer.loadStructureFromUrl(structureUrl, structureUrlFormat, structureUrlIsBinary);
-    
-                    var pdb = getParam('pdb', '[^&]+').trim();
-                    if (pdb) viewer.loadPdb(pdb);
-    
-                    var pdbDev = getParam('pdb-dev', '[^&]+').trim();
-                    if (pdbDev) viewer.loadPdbDev(pdbDev);
-    
-                    var emdb = getParam('emdb', '[^&]+').trim();
-                    if (emdb) viewer.loadEmdb(emdb);
-    
-                    // var afdb = getParam('afdb', '[^&]+').trim();
-                    // if (afdb) 
-                    // viewer.loadAlphaFoldDb('${accession}');
-                    ${accession};
-    
-                    var modelArchive = getParam('model-archive', '[^&]+').trim();
-                    if (modelArchive) viewer.loadModelArchive(modelArchive);
-                });
-            </script>
-            <!-- __MOLSTAR_ANALYTICS__ -->
-        </body>
-    </html>
-    `;
+    return htmlContent;
   }
 
   private _getWebviewContentForFiles(webview: vscode.Webview, extensionUri: vscode.Uri, clickedFiles: vscode.Uri[]) {
+    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer-multiple.html');
+    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
     const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.css'));
     const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.js'));
-    const pdbContents = clickedFiles.map((clickedFile) => webview.asWebviewUri(clickedFile));
+    const nonce = this.getNonce();
+
+    const bioContents = clickedFiles.map((clickedFile) => webview.asWebviewUri(clickedFile));
     const extensions = clickedFiles.map((clickedFile) => clickedFile.path.split('.').pop()?.toLocaleLowerCase());
     let loadCommands: String[] = [];
-    for (let i = 0; i < pdbContents.length; i++) {
-      const pdbContent = pdbContents[i];
-      var extension = extensions[i];
-      console.log(extension);
-      if (extension === 'cif' || extension === 'mmCIF' || extension === 'CIF' || extension === 'MMCIF' || extension == '.mCIF' || extension == '.mcif') {
+    for (let i = 0; i < bioContents.length; i++) {
+      const bioContent = bioContents[i];
+      var extension = extensions[i] ?? 'mmcif';
+      console.log('extension: ', extension);
+
+      if (['cif', 'mmcif', 'mcif'].includes(extension.toLowerCase())) {
         extension = 'mmcif';
+        console.log('bioContent: ', bioContent);
+        console.log('extension: ', extension);
+        loadCommands.push(
+          `viewer.loadStructureFromUrl('${bioContent}', format='${extension}');`
+        );
+      } else if (['mrc', 'map', 'ccp4'].includes(extension.toLowerCase())) {
+        extension = 'ccp4';
+        console.log('bioContent: ', bioContent);
+        console.log('extension: ', extension);
+        loadCommands.push(
+          `viewer.loadVolumeFromUrl({'${bioContent}', format='${extension}', isBinary=false}, [{type: 'absolute', color: 0x33BB33, alpha: 0.34}]);`
+        );
       }
-      console.log(extension);
-      loadCommands.push(
-        `viewer.loadStructureFromUrl('${pdbContent}', format='${extension}');`
-      );
     }
-    // Tip: Install the es6-string-html VS Code extension to enable code highlighting below
-    return /*html*/ `
-    <!DOCTYPE html>
-    <html lang="en">
-        <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-            <link rel="icon" href="./favicon.ico" type="image/x-icon">
-            <title>Mol* Viewer</title>
-            <style>
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                hr {
-                    margin: 10px;
-                }
-                h1, h2, h3, h4, h5 {
-                    margin-top: 5px;
-                    margin-bottom: 3px;
-                }
-                button {
-                    padding: 2px;
-                }
-                #app {
-                    position: absolute;
-                    left: 100px;
-                    top: 100px;
-                    width: 800px;
-                    height: 600px;
-                }
-            </style>
-            <link rel="stylesheet" type="text/css" href="${cssUri}" />
-        </head>
-        <body>
-            <div id="app"></div>
-            <script type="text/javascript" src="${jsUri}"></script>
-            <script type="text/javascript">
-                function getParam(name, regex) {
-                    var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
-                    return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
-                }
-                var debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
-                if (debugMode) molstar.setDebugMode(debugMode, debugMode);
 
-                var hideControls = getParam('hide-controls', '[^&]+').trim() === '1';
-                var collapseLeftPanel = getParam('collapse-left-panel', '[^&]+').trim() === '1';
-                var pdbProvider = getParam('pdb-provider', '[^&]+').trim().toLowerCase();
-                var emdbProvider = getParam('emdb-provider', '[^&]+').trim().toLowerCase();
-                var mapProvider = getParam('map-provider', '[^&]+').trim().toLowerCase();
-                var pixelScale = getParam('pixel-scale', '[^&]+').trim();
-                var pickScale = getParam('pick-scale', '[^&]+').trim();
-                var pickPadding = getParam('pick-padding', '[^&]+').trim();
-                var disableWboit = getParam('disable-wboit', '[^&]+').trim() === '1';
-                var preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
+    htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
+    htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
+    htmlContent = htmlContent.replace('${nonce}', nonce);
+    htmlContent = htmlContent.replace('${loadCommands}', loadCommands.join('\n'));
 
-                molstar.Viewer.create('app', {
-                    layoutShowControls: !hideControls,
-                    viewportShowExpand: false,
-                    collapseLeftPanel: collapseLeftPanel,
-                    pdbProvider: pdbProvider || 'pdbe',
-                    emdbProvider: emdbProvider || 'pdbe',
-                    volumeStreamingServer: (mapProvider || 'pdbe') === 'rcsb'
-                        ? 'https://maps.rcsb.org'
-                        : 'https://www.ebi.ac.uk/pdbe/densities',
-                    pixelScale: parseFloat(pixelScale) || 1,
-                    pickScale: parseFloat(pickScale) || 0.25,
-                    pickPadding: isNaN(parseFloat(pickPadding)) ? 1 : parseFloat(pickPadding),
-                    enableWboit: disableWboit ? true : void 0, // use default value if disable-wboit is not set
-                    preferWebgl1: preferWebgl1,
-                }).then(viewer => {
-                    var snapshotId = getParam('snapshot-id', '[^&]+').trim();
-                    if (snapshotId) viewer.setRemoteSnapshot(snapshotId);
-    
-                    var snapshotUrl = getParam('snapshot-url', '[^&]+').trim();
-                    var snapshotUrlType = getParam('snapshot-url-type', '[^&]+').toLowerCase().trim() || 'molj';
-                    if (snapshotUrl && snapshotUrlType) viewer.loadSnapshotFromUrl(snapshotUrl, snapshotUrlType);
-    
-                    var structureUrl = getParam('structure-url', '[^&]+').trim();
-                    var structureUrlFormat = getParam('structure-url-format', '[a-z]+').toLowerCase().trim();
-                    var structureUrlIsBinary = getParam('structure-url-is-binary', '[^&]+').trim() === '1';
-                    if (structureUrl) viewer.loadStructureFromUrl(structureUrl, structureUrlFormat, structureUrlIsBinary);
+    return htmlContent;
+  }
 
-                    ${loadCommands.join("")}
-
-                    var modelArchive = getParam('model-archive', '[^&]+').trim();
-                    if (modelArchive) viewer.loadModelArchive(modelArchive);
-                });
-            </script>
-            <!-- __MOLSTAR_ANALYTICS__ -->
-        </body>
-    </html>`;
+  private getNonce() {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < 32; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
   }
 }

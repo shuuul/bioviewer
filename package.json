@@ -2,7 +2,7 @@
   "name": "bioviewer",
   "displayName": "BioViewer",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -17,14 +17,6 @@
       {
         "command": "bioviewer.start",
         "title": "Start BioViewer"
-      },
-      {
-        "command": "bioviewer.activateFromFiles",
-        "title": "Open in BioViewer"
-      },
-      {
-        "command": "bioviewer.activateFromFolder",
-        "title": "Open Folder in BioViewer"
       }
     ],
     "menus": {
@@ -70,7 +62,11 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "molstar": "^4.6.0",
-    "molstar-volseg": "^0.0.15"
-  }
+    "molstar": "^4.6.0"
+  },
+  "files": [
+    "dist",
+    "src/webview/bioviewer-single.html",
+    "src/webview/bioviewer-multiple.html"
+  ]
 }
