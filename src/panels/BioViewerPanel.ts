@@ -11,29 +11,46 @@ export class BioViewerPanel {
     this._panel = panel;
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+
+    // Update the current panel when this panel becomes active
+    this._panel.onDidChangeViewState(
+      e => {
+        if (this._panel.active) {
+          BioViewerPanel.currentPanel = this;
+        }
+      },
+      null,
+      this._disposables
+    );
+
+    // Set this as the current panel immediately upon creation
+    BioViewerPanel.currentPanel = this;
   }
 
-  public static createOrShow(extensionUri: vscode.Uri, title: string = "BioViewer"): BioViewerPanel {
-    if (BioViewerPanel.currentPanel) {
-      BioViewerPanel.currentPanel._panel.reveal();
-      return BioViewerPanel.currentPanel;
-    }
+  public static create(extensionUri: vscode.Uri, title: string = "BioViewer"): BioViewerPanel {
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
 
     const panel = vscode.window.createWebviewPanel(
       "BioViewer",
       title,
-      vscode.ViewColumn.One,
+      column || vscode.ViewColumn.One,
       {
         enableScripts: true,
         retainContextWhenHidden: true
       }
     );
 
-    BioViewerPanel.currentPanel = new BioViewerPanel(panel, extensionUri);
+    return new BioViewerPanel(panel, extensionUri);
+  }
+
+  public static getCurrentPanel(): BioViewerPanel | undefined {
     return BioViewerPanel.currentPanel;
   }
 
   public loadContent(command: string, params: any) {
+    console.log('Sending message to webview:', { command, ...params });
     this._panel.webview.postMessage({ command, ...params });
   }
 

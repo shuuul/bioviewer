@@ -15,15 +15,17 @@
         <div id="app"></div>
         <script nonce="${nonce}" type="text/javascript" src="${jsUri}"></script>
         <script nonce="${nonce}" type="text/javascript">
+            console.log('Initializing BioViewer');
             molstar.Viewer.create('app', {
                 layoutShowControls: true,
                 viewportShowExpand: false,
                 pdbProvider: 'pdbe',
                 emdbProvider: 'pdbe',
             }).then(viewer => {
+                console.log('BioViewer initialized');
                 window.addEventListener('message', event => {
                     const message = event.data;
-                    console.log('Received message:', message);
+                    console.log('Received message in webview:', message);
                     switch (message.command) {
                         case 'loadPdb':
                             viewer.loadPdb(message.accession);
@@ -36,18 +38,20 @@
                             break;
                         case 'appendStructure':
                             viewer.loadStructureFromUrl(message.url, message.format)
+                                .then(() => console.log('Structure loaded successfully'))
                                 .catch(error => console.error('Error loading structure:', error));
                             break;
                         case 'appendVolume':
                             viewer.loadVolumeFromUrl(
                                 { url: message.url, format: message.format, isBinary: message.isBinary },
                                 [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]
-                            ).catch(error => console.error('Error loading volume:', error));
+                            ).then(() => console.log('Volume loaded successfully'))
+                              .catch(error => console.error('Error loading volume:', error));
                             break;
                         default:
                             console.log('Unknown command:', message.command);
                     }
-                });
+                }).catch(error => console.error('Error initializing BioViewer:', error));
             });
         </script>
     </body>

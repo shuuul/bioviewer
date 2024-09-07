@@ -16,19 +16,19 @@
     "commands": [
       {
         "command": "bioviewer.start",
-        "title": "Start BioViewer"
+        "title": "Start BioViewer with ID in New Panel"
       },
       {
         "command": "bioviewer.activateFromFiles",
-        "title": "Open in BioViewer"
+        "title": "Open File(s) in New BioViewer Panel"
       },
       {
         "command": "bioviewer.activateFromFolder",
-        "title": "Open Folder in BioViewer"
+        "title": "Open Folder in New BioViewer Panel"
       },
       {
         "command": "bioviewer.appendFile",
-        "title": "Append File to BioViewer"
+        "title": "Append File(s) to Current BioViewer Panel"
       }
     ],
     "menus": {
@@ -79,8 +79,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "molstar": "^4.6.0",
-    "molstar-volseg": "^0.0.15"   
+    "molstar": "^4.6.0"
   },
   "files": [
     "dist",
