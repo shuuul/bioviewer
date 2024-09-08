@@ -71,7 +71,7 @@ export class BioViewerPanel {
   }
 
   private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
-    const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer.html');
+    const htmlPath = path.join(extensionUri.fsPath, 'dist', 'webview', 'bioviewer.html');
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
     const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
