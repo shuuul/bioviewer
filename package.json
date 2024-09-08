@@ -1,15 +1,17 @@
 {
   "name": "bioviewer",
   "displayName": "BioViewer",
+  "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": "https://github.com/shuuul/bioviewer.git",
   "engines": {
     "vscode": "^1.93.0"
   },
   "categories": [
     "Other",
-    "Visualization"
+    "Visualization",
+    "Data Science"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -17,19 +19,19 @@
     "commands": [
       {
         "command": "bioviewer.start",
-        "title": "Start BioViewer with ID in New Panel"
+        "title": "BioViewer: Start BioViewer with ID in New Panel"
       },
       {
         "command": "bioviewer.activateFromFiles",
-        "title": "Open File(s) in New BioViewer Panel"
+        "title": "BioViewer: Open File(s) in New BioViewer Panel"
       },
       {
         "command": "bioviewer.activateFromFolder",
-        "title": "Open Folder in New BioViewer Panel"
+        "title": "BioViewer: Open Folder in New BioViewer Panel"
       },
       {
         "command": "bioviewer.appendFile",
-        "title": "Append File(s) to Current BioViewer Panel"
+        "title": "BioViewer: Append File(s) to Current BioViewer Panel"
       }
     ],
     "menus": {
@@ -80,11 +82,12 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "fs-extra": "^11.2.0",
     "molstar": "^4.6.0"
   },
   "files": [
     "dist",
-    "src/webview/bioviewer-single.html",
-    "src/webview/bioviewer-multiple.html"
+    "dist/webview/bioviewer.html",
+    "dist/molstar"
   ]
 }

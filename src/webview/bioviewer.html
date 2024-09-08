@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <link rel="icon" href="./favicon.ico" type="image/x-icon">
         <title>BioViewer</title>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,26 +16,70 @@
         <div id="app"></div>
         <script nonce="${nonce}" type="text/javascript" src="${jsUri}"></script>
         <script nonce="${nonce}" type="text/javascript">
+            function getParam(name, regex) {
+                var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
+                return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
+            }
+            var debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
+            if (debugMode) molstar.setDebugMode(debugMode, debugMode);
+
+            var hideControls = getParam('hide-controls', '[^&]+').trim() === '1';
+            var collapseLeftPanel = getParam('collapse-left-panel', '[^&]+').trim() === '1';
+            var pdbProvider = getParam('pdb-provider', '[^&]+').trim().toLowerCase();
+            var emdbProvider = getParam('emdb-provider', '[^&]+').trim().toLowerCase();
+            var mapProvider = getParam('map-provider', '[^&]+').trim().toLowerCase();
+            var pixelScale = getParam('pixel-scale', '[^&]+').trim();
+            var pickScale = getParam('pick-scale', '[^&]+').trim();
+            var pickPadding = getParam('pick-padding', '[^&]+').trim();
+            var disableWboit = getParam('disable-wboit', '[^&]+').trim() === '1';
+            var preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
+
             console.log('Initializing BioViewer');
             molstar.Viewer.create('app', {
-                layoutShowControls: true,
+                layoutShowControls: !hideControls,
                 viewportShowExpand: false,
-                pdbProvider: 'pdbe',
-                emdbProvider: 'pdbe',
+                collapseLeftPanel: collapseLeftPanel,
+                pdbProvider: pdbProvider || 'pdbe',
+                emdbProvider: emdbProvider || 'pdbe',
+                volumeStreamingServer: (mapProvider || 'pdbe') === 'rcsb'
+                    ? 'https://maps.rcsb.org'
+                    : 'https://www.ebi.ac.uk/pdbe/densities',
+                pixelScale: parseFloat(pixelScale) || 1,
+                pickScale: parseFloat(pickScale) || 0.25,
+                pickPadding: isNaN(parseFloat(pickPadding)) ? 1 : parseFloat(pickPadding),
+                enableWboit: disableWboit ? true : void 0,
+                preferWebgl1: preferWebgl1,
             }).then(viewer => {
-                console.log('BioViewer initialized');
+                console.log('BioViewer panel initialized');
+                console.log('Viewer methods:', Object.keys(viewer));
+                if (typeof viewer.loadPdb === 'function') {
+                    console.log('loadPdb method exists');
+                } else {
+                    console.error('loadPdb method does not exist on viewer');
+                }
                 window.addEventListener('message', event => {
                     const message = event.data;
                     console.log('Received message in webview:', message);
                     switch (message.command) {
+                        case 'executeCommand':
+                            eval(message.command)
+                                .then(() => console.log('Command executed successfully'))
+                                .catch(error => console.error('Error executing command:', error));
+                            break;
                         case 'loadPdb':
-                            viewer.loadPdb(message.accession);
+                            viewer.loadPdb(message.accession)
+                                .then(() => console.log('PDB loaded successfully'))
+                                .catch(error => console.error('Error loading PDB:', error));
                             break;
                         case 'loadAlphaFoldDb':
-                            viewer.loadAlphaFoldDb(message.accession);
+                            viewer.loadAlphaFoldDb(message.accession)
+                                .then(() => console.log('AlphaFoldDB loaded successfully'))
+                                .catch(error => console.error('Error loading AlphaFoldDB:', error));
                             break;
                         case 'loadEmdb':
-                            viewer.loadEmdb('emd-' + message.accession);
+                            viewer.loadEmdb('emd-' + message.accession)
+                                .then(() => console.log('EMDB loaded successfully'))
+                                .catch(error => console.error('Error loading EMDB:', error));
                             break;
                         case 'appendStructure':
                             viewer.loadStructureFromUrl(message.url, message.format)

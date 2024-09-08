@@ -1,4 +1,6 @@
 const esbuild = require("esbuild");
+const fs = require("fs-extra");
+const path = require("path");
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -23,6 +25,40 @@ const esbuildProblemMatcherPlugin = {
 	},
 };
 
+const copyMolstarPlugin = {
+	name: 'copy-molstar-plugin',
+	setup(build) {
+	  build.onEnd(() => {
+		const molstarSrcDir = path.join(__dirname, 'node_modules', 'molstar', 'build', 'viewer');
+		const molstarDestDir = path.join(__dirname, 'dist', 'molstar');
+		fs.ensureDirSync(molstarDestDir);
+		fs.copySync(molstarSrcDir, molstarDestDir, {
+		  filter: (src, dest) => {
+			// Optionally exclude certain directories or files
+			return !src.includes('node_modules') && !src.includes('.git');
+		  }
+		});
+		console.log('Copied Molstar module to dist/molstar/');
+	  });
+	},
+  };
+
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const copyHtmlPlugin = {
+	name: 'copy-html-plugin',
+	setup(build) {
+		build.onEnd(() => {
+			const src = path.join(__dirname, 'src', 'webview', 'bioviewer.html');
+			const dest = path.join(__dirname, 'dist', 'webview', 'bioviewer.html');
+			fs.ensureDirSync(path.dirname(dest));
+			fs.copyFileSync(src, dest);
+			console.log('Copied bioviewer.html to dist/webview/');
+		});
+	},
+};
+
 async function main() {
 	const ctx = await esbuild.context({
 		entryPoints: [
@@ -38,8 +74,9 @@ async function main() {
 		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [
-			/* add to the end of plugins array */
 			esbuildProblemMatcherPlugin,
+			copyHtmlPlugin,
+			copyMolstarPlugin,
 		],
 	});
 	if (watch) {

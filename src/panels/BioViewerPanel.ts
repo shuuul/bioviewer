@@ -6,9 +6,11 @@ export class BioViewerPanel {
   public static currentPanel: BioViewerPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
+  private static _outputChannel: vscode.OutputChannel;
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
+    BioViewerPanel._outputChannel.appendLine(`BioViewerPanel constructed with title: ${panel.title}`);
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
     this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
 
@@ -27,7 +29,9 @@ export class BioViewerPanel {
     BioViewerPanel.currentPanel = this;
   }
 
-  public static create(extensionUri: vscode.Uri, title: string = "BioViewer"): BioViewerPanel {
+  public static create(extensionUri: vscode.Uri, title: string = "BioViewer", outputChannel: vscode.OutputChannel): BioViewerPanel {
+    BioViewerPanel._outputChannel = outputChannel;
+    BioViewerPanel._outputChannel.appendLine(`Creating new BioViewerPanel with title: ${title}`);
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
       : undefined;
@@ -50,11 +54,12 @@ export class BioViewerPanel {
   }
 
   public loadContent(command: string, params: any) {
-    console.log('Sending message to webview:', { command, ...params });
+    BioViewerPanel._outputChannel.appendLine(`Sending message to webview: ${JSON.stringify({ command, ...params })}`);
     this._panel.webview.postMessage({ command, ...params });
   }
 
   public dispose() {
+    BioViewerPanel._outputChannel.appendLine(`Disposing BioViewerPanel: ${this._panel.title}`);
     BioViewerPanel.currentPanel = undefined;
     this._panel.dispose();
     while (this._disposables.length) {
@@ -69,8 +74,8 @@ export class BioViewerPanel {
     const htmlPath = path.join(extensionUri.fsPath, 'src', 'webview', 'bioviewer.html');
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
-    const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.css'));
-    const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', 'molstar', 'build/viewer', 'molstar.js'));
+    const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
+    const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.js'));
     const nonce = this.getNonce();
 
     htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
