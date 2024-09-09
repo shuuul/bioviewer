@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": "https://github.com/shuuul/bioviewer.git",
   "engines": {
     "vscode": "^1.93.0"

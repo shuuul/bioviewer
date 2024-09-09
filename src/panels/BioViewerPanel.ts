@@ -7,26 +7,44 @@ export class BioViewerPanel {
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
   private static _outputChannel: vscode.OutputChannel;
+  private _readyPromise: Promise<void>;
+  private _resolveReady: (() => void) | undefined;
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this._panel = panel;
     BioViewerPanel._outputChannel.appendLine(`BioViewerPanel constructed with title: ${panel.title}`);
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
-    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+    this._readyPromise = new Promise((resolve) => {
+      this._resolveReady = resolve;
+    });
 
-    // Update the current panel when this panel becomes active
-    this._panel.onDidChangeViewState(
-      e => {
-        if (this._panel.active) {
-          BioViewerPanel.currentPanel = this;
+    // Handle messages from the webview
+    this._panel.webview.onDidReceiveMessage(
+      message => {
+        switch (message.command) {
+          case 'ready':
+            this.handleReady();
+            BioViewerPanel.currentPanel = this;
+            break;
         }
       },
       null,
       this._disposables
     );
 
-    // Set this as the current panel immediately upon creation
-    BioViewerPanel.currentPanel = this;
+    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+  }
+
+  private handleReady() {
+    BioViewerPanel._outputChannel.appendLine('Webview is ready');
+    if (this._resolveReady) {
+      this._resolveReady();
+      this._resolveReady = undefined;
+    }
+  }
+
+  public async waitForReady(): Promise<void> {
+    return this._readyPromise;
   }
 
   public static create(extensionUri: vscode.Uri, title: string = "BioViewer", outputChannel: vscode.OutputChannel): BioViewerPanel {

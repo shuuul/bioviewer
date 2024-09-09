@@ -32,12 +32,7 @@ const copyMolstarPlugin = {
 		const molstarSrcDir = path.join(__dirname, 'node_modules', 'molstar', 'build', 'viewer');
 		const molstarDestDir = path.join(__dirname, 'dist', 'molstar');
 		fs.ensureDirSync(molstarDestDir);
-		fs.copySync(molstarSrcDir, molstarDestDir, {
-		  filter: (src, dest) => {
-			// Optionally exclude certain directories or files
-			return !src.includes('node_modules') && !src.includes('.git');
-		  }
-		});
+		fs.copySync(molstarSrcDir, molstarDestDir);
 		console.log('Copied Molstar module to dist/molstar/');
 	  });
 	},

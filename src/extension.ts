@@ -8,7 +8,7 @@ export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('BioViewer extension is now active');
 
   const commands = [
-    vscode.commands.registerCommand("bioviewer.start", () => startBioViewer(context)),
+    vscode.commands.registerCommand("bioviewer.startBioViewer", () => startBioViewer(context)),
     vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => activateFromFiles(context, fileUri, selectedFiles)),
     vscode.commands.registerCommand("bioviewer.activateFromFolder", (folderUri: vscode.Uri) => activateFromFolder(context, folderUri)),
     vscode.commands.registerCommand("bioviewer.appendFile", (fileUri?: vscode.Uri) => appendFile(context, fileUri))
@@ -58,7 +58,8 @@ async function startBioViewer(context: vscode.ExtensionContext) {
 	  const panel = BioViewerPanel.create(context.extensionUri, `BioViewer - ${selection}-${accession}`, outputChannel);
 
 	  // Wait for the panel to be ready before loading files
-	  await new Promise(resolve => setTimeout(resolve, 500));
+    await panel.waitForReady();
+    outputChannel.appendLine('Panel is ready');
 	  
 	  panel.loadContent(command, { accession: accession });
       outputChannel.appendLine(`Sending load command to panel: ${command}`);
@@ -79,7 +80,8 @@ async function activateFromFiles(context: vscode.ExtensionContext, fileUri: vsco
   outputChannel.appendLine(`Files to open: ${filesToOpen}`);
 
   // Wait for the panel to be ready before loading files
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready');
 
   for (const file of filesToOpen) {
     outputChannel.appendLine(`Loading file in new panel: ${file.fsPath}`);
@@ -101,7 +103,8 @@ async function activateFromFolder(context: vscode.ExtensionContext, folderUri: v
   outputChannel.appendLine(`Files found in folder: ${files}`);
 
   // Wait for the panel to be ready before loading files
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready');
 
   for (const file of files) {
     outputChannel.appendLine(`Loading file from folder in new panel: ${file.fsPath}`);
@@ -113,13 +116,14 @@ async function appendFile(context: vscode.ExtensionContext, fileUri?: vscode.Uri
   const filesToAppend = fileUri ? [fileUri] : await selectFiles();
   if (filesToAppend.length === 0) {return;}
 
-  outputChannel.appendLine(`Current panel before append: ${BioViewerPanel.getCurrentPanel()}`);
-  
-  // Use the current panel if it exists, or create a new one
-  const panel = BioViewerPanel.getCurrentPanel() || BioViewerPanel.create(context.extensionUri, "BioViewer", outputChannel);
-  
-  outputChannel.appendLine(`Panel used for append: ${panel}`);
-  outputChannel.appendLine(`Is new panel created: ${panel === BioViewerPanel.getCurrentPanel()}`);
+  // Get the current panel or create a new one if it doesn't exist
+  let panel = BioViewerPanel.getCurrentPanel();
+  if (!panel) {
+    panel = BioViewerPanel.create(context.extensionUri, "BioViewer", outputChannel);
+    // Wait for the new panel to be ready
+    await panel.waitForReady();
+    outputChannel.appendLine('New panel created and ready');
+  }
 
   filesToAppend.forEach(file => loadFile(panel, file));
 }
@@ -146,9 +150,6 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
       isBinary: command === 'appendVolume',
       label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
     });
-    
-    // Add a small delay to ensure the message is processed
-    setTimeout(resolve, 100);
   });
 }
 
