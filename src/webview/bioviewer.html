@@ -76,12 +76,12 @@
                                 .then(() => console.log('EMDB loaded successfully'))
                                 .catch(error => console.error('Error loading EMDB:', error));
                             break;
-                        case 'appendStructure':
+                        case 'loadStructure':
                             viewer.loadStructureFromUrl(message.url, message.format)
                                 .then(() => console.log('Structure loaded successfully'))
                                 .catch(error => console.error('Error loading structure:', error));
                             break;
-                        case 'appendVolume':
+                        case 'loadVolume':
                             viewer.loadVolumeFromUrl(
                                 { url: message.url, format: message.format, isBinary: message.isBinary },
                                 [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]

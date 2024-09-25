@@ -132,14 +132,29 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
   outputChannel.appendLine(`Loading file: ${fileUri.fsPath}`);
   const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
   const webviewUri = panel.getWebviewUri(fileUri);
-  const format = ['.pdb', '.cif', '.mmcif', '.mcif'].includes(fileExtension) ? 'mmcif' : 'ccp4';
-  const command = format === 'mmcif' ? 'appendStructure' : 'appendVolume';
+  
+  let format: string;
+  let command: string;
+  
+  if (['.pdb', '.ent'].includes(fileExtension)) {
+    format = 'pdb';
+    command = 'loadStructure';
+  } else if (['.cif', '.mmcif', '.mcif'].includes(fileExtension)) {
+    format = 'mmcif';
+    command = 'loadStructure';
+  } else if (['.map', '.mrc', '.ccp4'].includes(fileExtension)) {
+    format = 'ccp4';
+    command = 'loadVolume';
+  } else {
+    outputChannel.appendLine(`Unsupported file format: ${fileExtension}`);
+    return;
+  }
 
   outputChannel.appendLine(`Command: ${command}`);
   outputChannel.appendLine(`Params: ${JSON.stringify({
     url: webviewUri.toString(),
     format,
-    isBinary: command === 'appendVolume',
+    isBinary: format === 'ccp4',
     label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
   })}`);
 
@@ -147,9 +162,10 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
     panel.loadContent(command, {
       url: webviewUri.toString(),
       format,
-      isBinary: command === 'appendVolume',
+      isBinary: format === 'ccp4',
       label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
     });
+    resolve();
   });
 }
 

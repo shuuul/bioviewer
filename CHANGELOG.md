@@ -4,6 +4,10 @@ All notable changes to the "BioViewer" extension will be documented in this file
 
 ## [Unreleased]
 
+## [0.0.5] - 2024-09-26
+
+- Fix bugs in loading PDB files
+
 ## [0.0.4] - 2024-09-09
 
 - Fix bugs in communication between VSCode and BioViewer
