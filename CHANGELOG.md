@@ -4,6 +4,10 @@ All notable changes to the "BioViewer" extension will be documented in this file
 
 ## [Unreleased]
 
+## [0.0.6] - 2024-09-28
+
+- Downgrade vsce to 1.91.0 to support cursor
+
 ## [0.0.5] - 2024-09-26
 
 - Fix bugs in loading PDB files
