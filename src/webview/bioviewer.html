@@ -16,10 +16,14 @@
         <div id="app"></div>
         <script nonce="${nonce}" type="text/javascript" src="${jsUri}"></script>
         <script nonce="${nonce}" type="text/javascript">
+            // Acquire the VS Code API once
+            const vscode = acquireVsCodeApi();
+
             function getParam(name, regex) {
                 var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
                 return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
             }
+
             var debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
             if (debugMode) molstar.setDebugMode(debugMode, debugMode);
 
@@ -35,71 +39,153 @@
             var preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
 
             console.log('Initializing BioViewer');
-            molstar.Viewer.create('app', {
-                layoutShowControls: !hideControls,
-                viewportShowExpand: false,
-                collapseLeftPanel: collapseLeftPanel,
-                pdbProvider: pdbProvider || 'pdbe',
-                emdbProvider: emdbProvider || 'pdbe',
-                volumeStreamingServer: (mapProvider || 'pdbe') === 'rcsb'
-                    ? 'https://maps.rcsb.org'
-                    : 'https://www.ebi.ac.uk/pdbe/densities',
-                pixelScale: parseFloat(pixelScale) || 1,
-                pickScale: parseFloat(pickScale) || 0.25,
-                pickPadding: isNaN(parseFloat(pickPadding)) ? 1 : parseFloat(pickPadding),
-                enableWboit: disableWboit ? true : void 0,
-                preferWebgl1: preferWebgl1,
-            }).then(viewer => {
-                console.log('BioViewer panel initializing...');
-                console.log('Viewer methods:', Object.keys(viewer));
-                window.addEventListener('message', event => {
-                    const message = event.data;
-                    console.log('Received message in webview:', message);
-                    switch (message.command) {
-                        case 'executeCommand':
-                            eval(message.command)
-                                .then(() => console.log('Command executed successfully'))
-                                .catch(error => console.error('Error executing command:', error));
-                            break;
-                        case 'loadPdb':
-                            viewer.loadPdb(message.accession)
-                                .then(() => console.log('PDB loaded successfully'))
-                                .catch(error => console.error('Error loading PDB:', error));
-                            break;
-                        case 'loadAlphaFoldDb':
-                            viewer.loadAlphaFoldDb(message.accession)
-                                .then(() => console.log('AlphaFoldDB loaded successfully'))
-                                .catch(error => console.error('Error loading AlphaFoldDB:', error));
-                            break;
-                        case 'loadEmdb':
-                            viewer.loadEmdb('emd-' + message.accession)
-                                .then(() => console.log('EMDB loaded successfully'))
-                                .catch(error => console.error('Error loading EMDB:', error));
-                            break;
-                        case 'loadStructure':
-                            viewer.loadStructureFromUrl(message.url, message.format)
-                                .then(() => console.log('Structure loaded successfully'))
-                                .catch(error => console.error('Error loading structure:', error));
-                            break;
-                        case 'loadVolume':
-                            viewer.loadVolumeFromUrl(
-                                { url: message.url, format: message.format, isBinary: message.isBinary },
-                                [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]
-                            ).then(() => console.log('Volume loaded successfully'))
-                              .catch(error => console.error('Error loading volume:', error));
-                            break;
-                        default:
-                            console.log('Unknown command:', message.command);
-                    }
-                });
-            });
 
-            // Acquire the VS Code API
-            const vscode = acquireVsCodeApi();
-            console.log('Initilazed. Send the ready state to backend.')
-            window.onload = () => {
-                vscode.postMessage({ command: 'ready' });
+            // Enhanced logging function
+            function log(message, type = 'info') {
+                const timestamp = new Date().toISOString();
+                const logMessage = `[BioViewer Webview][${timestamp}] ${message}`;
+                switch(type) {
+                    case 'error':
+                        console.error(logMessage);
+                        break;
+                    case 'warn':
+                        console.warn(logMessage);
+                        break;
+                    default:
+                        console.log(logMessage);
+                }
             }
+
+            // Initialize viewer with better message handling
+            try {
+                log('Starting viewer initialization');
+                molstar.Viewer.create('app', {
+                    layoutShowControls: !hideControls,
+                    viewportShowExpand: false,
+                    collapseLeftPanel: collapseLeftPanel,
+                    pdbProvider: pdbProvider || 'pdbe',
+                    emdbProvider: emdbProvider || 'pdbe',
+                    volumeStreamingServer: (mapProvider || 'pdbe') === 'rcsb'
+                        ? 'https://maps.rcsb.org'
+                        : 'https://www.ebi.ac.uk/pdbe/densities',
+                    pixelScale: parseFloat(pixelScale) || 1,
+                    pickScale: parseFloat(pickScale) || 0.25,
+                    pickPadding: isNaN(parseFloat(pickPadding)) ? 1 : parseFloat(pickPadding),
+                    enableWboit: disableWboit ? true : void 0,
+                    preferWebgl1: preferWebgl1,
+                }).then(viewer => {
+                    window.viewer = viewer;
+                    log('Viewer created successfully');
+                    signalReady();
+
+                    // Move message handling here after viewer is initialized
+                    window.addEventListener('message', event => {
+                        try {
+                            const message = event.data;
+                            log(`Received message: ${JSON.stringify(message)}`);
+
+                            // Validate message
+                            if (!message) {
+                                throw new Error('No message received');
+                            }
+
+                            // Handle the message
+                            switch (message.command) {
+                                case 'loadStructure':
+                                    if (!message.url || !message.format) {
+                                        throw new Error('Invalid loadStructure parameters');
+                                    }
+                                    log('Loading structure...');
+                                    vscode.postMessage({ command: 'loading' });
+                                    viewer.loadStructureFromUrl(message.url, message.format)
+                                        .then(() => {
+                                            log('Structure loaded successfully');
+                                            vscode.postMessage({ command: 'loaded' });
+                                        })
+                                        .catch(error => {
+                                            log(`Error loading structure: ${error}`, 'error');
+                                            vscode.postMessage({ 
+                                                command: 'error', 
+                                                error: `Error loading structure: ${error}` 
+                                            });
+                                        });
+                                    break;
+
+                                case 'loadVolume':
+                                    if (!message.url || !message.format) {
+                                        throw new Error('Invalid loadVolume parameters');
+                                    }
+                                    log('Loading volume...');
+                                    vscode.postMessage({ command: 'loading' });
+                                    viewer.loadVolumeFromUrl(
+                                        {
+                                            url: message.url,
+                                            format: message.format,
+                                            isBinary: message.isBinary
+                                        },
+                                        [{
+                                            type: 'absolute',
+                                            value: 0.1,
+                                            color: 0x33BB33,
+                                            alpha: 0.34,
+                                            entryId: message.label
+                                        }]
+                                    ).then(() => {
+                                        log('Volume loaded successfully');
+                                        vscode.postMessage({ command: 'loaded' });
+                                    }).catch(error => {
+                                        log(`Error loading volume: ${error}`, 'error');
+                                        vscode.postMessage({ 
+                                            command: 'error', 
+                                            error: `Error loading volume: ${error}` 
+                                        });
+                                    });
+                                    break;
+
+                                default:
+                                    log(`Unknown command: ${message.command}`, 'warn');
+                                    break;
+                            }
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            log(`Error handling message: ${errorMessage}`, 'error');
+                            vscode.postMessage({ 
+                                command: 'error', 
+                                error: errorMessage 
+                            });
+                        }
+                    });
+                }).catch(error => {
+                    log(`Error creating viewer: ${error}`, 'error');
+                    vscode.postMessage({ 
+                        command: 'error', 
+                        error: `Error creating viewer: ${error}` 
+                    });
+                });
+            } catch (error) {
+                log(`Error in initialization: ${error}`, 'error');
+                vscode.postMessage({ 
+                    command: 'error', 
+                    error: `Error initializing viewer: ${error}` 
+                });
+            }
+
+            // Only signal ready once
+            let readySent = false;
+            function signalReady() {
+                if (!readySent) {
+                    log('Sending ready signal');
+                    vscode.postMessage({ command: 'ready' });
+                    readySent = true;
+                    log('Ready signal sent');
+                }
+            }
+
+            // Signal ready on window load as backup
+            window.addEventListener('load', () => {
+                log('Window load event triggered');
+                signalReady();
+            });
         </script>
     </body>
 </html>

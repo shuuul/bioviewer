@@ -3,15 +3,37 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.6",
-  "repository": "https://github.com/shuuul/bioviewer.git",
+  "version": "0.0.7",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shuuul/bioviewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shuuul/bioviewer/issues"
+  },
+  "homepage": "https://github.com/shuuul/bioviewer#readme",
+  "author": {
+    "name": "shuuul",
+    "url": "https://github.com/shuuul"
+  },
+  "license": "MIT",
   "engines": {
-    "vscode": "^1.91.0"
+    "vscode": "^1.93.0",
+    "node": ">=16.0.0"
   },
   "categories": [
     "Other",
     "Visualization",
     "Data Science"
+  ],
+  "keywords": [
+    "biology",
+    "molecular",
+    "structure",
+    "visualization",
+    "pdb",
+    "electron microscopy",
+    "cryo-em"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -66,7 +88,11 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "prepare": "npm run compile",
+    "clean": "rm -rf dist out releases/*.vsix",
+    "build:vsix": "npm run clean && npm run compile && mkdir -p releases && vsce package --out releases/bioviewer.vsix",
+    "test:vsix": "npm run build:vsix && code --install-extension releases/bioviewer.vsix"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.7",
@@ -89,5 +115,21 @@
     "dist",
     "dist/webview/bioviewer.html",
     "dist/molstar"
+  ],
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  },
+  "badges": [
+    {
+      "url": "https://img.shields.io/visual-studio-marketplace/v/shuuul.bioviewer",
+      "href": "https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer",
+      "description": "VS Marketplace Version"
+    },
+    {
+      "url": "https://img.shields.io/visual-studio-marketplace/i/shuuul.bioviewer",
+      "href": "https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer",
+      "description": "VS Marketplace Installs"
+    }
   ]
 }

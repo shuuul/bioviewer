@@ -1,45 +1,86 @@
-# BioViewer README
+# BioViewer
 
-The package is a wrapper around the Mol* library to allow for the display of biological structures and volumes in VS Code.
+[![Version](https://img.shields.io/visual-studio-marketplace/v/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+BioViewer is a powerful Visual Studio Code extension for visualizing biological macrostructures and electron microscopy data. Built on top of the Mol* library, it provides seamless integration for viewing and analyzing structural biology data directly within your IDE.
 
 ## Features
 
-- Display PDB, AlphaFoldDB, EMDB, and local files in the Mol* viewer
-- Display volumes in the Mol* volume viewer
-- Display local files in the VS Code text editor
+- **Integrated Structure Viewer**: Visualize PDB, mmCIF, and other structural biology file formats
+- **AlphaFoldDB Support**: Direct visualization of AlphaFold predicted structures
+- **EM Data Visualization**: Support for electron microscopy maps (MRC, MAP, CCP4)
+- **Local File Support**: Open and view files from your local workspace
+- **Multi-file Support**: Append multiple files to the same viewer panel
+- **Advanced Visualization Options**: Multiple representation styles and coloring schemes
+
+## Installation
+
+1. Open Visual Studio Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "BioViewer"
+4. Click Install
 
 ## Usage
 
-- Open a file in VS Code
-- Use the `BioViewer: Start` command to open the BioViewer
-- Use the `BioViewer: Append File` command to append a file to the BioViewer
-- Use the `BioViewer: Activate from Files` command to activate the BioViewer from a file
-- Use the `BioViewer: Activate from Folder` command to activate the BioViewer from a folder
+### Commands
+
+- `BioViewer: Start BioViewer with ID in New Panel` - Open a new viewer panel
+- `BioViewer: Open File(s) in New BioViewer Panel` - Open selected files in a new panel
+- `BioViewer: Open Folder in New BioViewer Panel` - Open all supported files from a folder
+- `BioViewer: Append File(s) to Current BioViewer Panel` - Add files to existing viewer
+
+### Context Menu
+
+Right-click on supported files (.pdb, .cif, .mmcif, .mcif, .ent, .map, .mrc, .ccp4) in the explorer to:
+- Open in new BioViewer panel
+- Append to current viewer
+- Open folder contents
 
 ## Requirements
 
-- VS Code 1.93.0 or later
-- Mol* library
+- Visual Studio Code ^1.91.0
+- Internet connection for fetching online structures (PDB, AlphaFoldDB)
 
-## Extension Settings
+## Supported File Formats
 
-This extension does not contribute any settings through the `contributes.configuration` extension point.
+- **Structural Data**: PDB, mmCIF, mcif, ent
+- **Electron Microscopy**: MAP, MRC, CCP4
 
-## Known Issues
+## Development
 
-- The extension may not work with all file types.
-- The extension may not work with all file sizes.
-- The extension may not work with all file formats.
+### Setup
+```bash
+git clone https://github.com/shuuul/bioviewer.git
+cd bioviewer
+npm install
+```
 
-## Release Notes
+### Build
+```bash
+npm run compile    # Build the extension
+npm run watch     # Watch mode for development
+```
 
-- 0.0.1: Initial release
-- 0.0.2: Added support for local files, PDB, AlphaFoldDB, EMDB, and volumes
+### Testing
+```bash
+npm run test      # Run tests
+```
 
 ## Contributing
 
-This extension is built using TypeScript and ESBuild. If you want to contribute to the extension, please open an issue or a pull request.
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
 ## License
 
-This extension is licensed under the MIT License. See the LICENSE file for more details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with [Mol*](https://github.com/molstar/molstar)
+- Developed by [shuuul](https://github.com/shuuul)
+
+## Support
+
+If you encounter any issues or have feature requests, please [open an issue](https://github.com/shuuul/bioviewer/issues).
