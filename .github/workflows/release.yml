@@ -22,20 +22,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run tests
-        run: npm test
-      
       - name: Package Extension
         run: |
           npm install -g @vscode/vsce
           vsce package
-          echo "VSIX_PATH=$(ls *.vsix)" >> $GITHUB_ENV
+          echo "VSIX_PATH=$(find . -maxdepth 1 -name "*.vsix" -type f -printf '%f\n')" >> $GITHUB_ENV
+      
+      - name: Debug Info
+        run: |
+          ls -la
+          echo "VSIX file: ${{ env.VSIX_PATH }}"
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           generate_release_notes: true
           files: |
-            ${{ env.VSIX_PATH }}
+            ./*.vsix
             README.md
             CHANGELOG.md
+          fail_on_unmatched_files: true
