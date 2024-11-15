@@ -4,7 +4,12 @@ All notable changes to the "BioViewer" extension will be documented in this file
 
 ## [Unreleased]
 
-## [0.0.7] - 2024-03-19
+## [0.0.8] - 2024-11-15
+
+- Added GitHub Actions workflow for automated releases
+- Package extension as .vsix file in releases
+
+## [0.0.7] - 2024-11-15
 
 - Fixed all test cases
 - Improved code quality and stability
