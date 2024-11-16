@@ -4,6 +4,15 @@ All notable changes to the "BioViewer" extension will be documented in this file
 
 ## [Unreleased]
 
+## [0.0.9] - 2024-11-16
+
+- Enhanced logging system throughout the application for better debugging
+- Added detailed performance metrics for panel initialization
+- Improved error handling with detailed error messages
+- Added structured logging with categories
+- Added timing metrics for critical operations
+- Improved message tracing between webview and extension
+
 ## [0.0.8] - 2024-11-15
 
 - Added GitHub Actions workflow for automated releases

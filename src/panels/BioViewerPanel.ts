@@ -6,166 +6,84 @@ export class BioViewerPanel {
   public static currentPanel: BioViewerPanel | undefined;
   private readonly _panel: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
-  protected static _outputChannel: vscode.OutputChannel;
+  private static _outputChannel: vscode.OutputChannel;
   private _readyPromise: Promise<void>;
   private _resolveReady: (() => void) | undefined;
-  private _rejectReady: ((reason: any) => void) | undefined;
-  private _isReady: boolean = false;
-  private _isLoading: boolean = false;
-  private _isInitialized: boolean = false;
-
-  public get panel(): vscode.WebviewPanel {
-    return this._panel;
-  }
-
-  public get isLoading(): boolean {
-    return this._isLoading;
-  }
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    const startTime = Date.now();
+    BioViewerPanel._outputChannel.appendLine(`[Constructor] Initializing BioViewerPanel with panel ID: ${panel.title}`);
+    
     this._panel = panel;
-    BioViewerPanel.currentPanel = this;
-
-    // Initialize ready promise
-    this._readyPromise = new Promise<void>((resolve, reject) => {
+    
+    this._panel.onDidDispose(() => {
+      BioViewerPanel._outputChannel.appendLine(`[Dispose] Panel ${panel.title} is being disposed`);
+      this.dispose();
+    }, null, this._disposables);
+    
+    this._readyPromise = new Promise((resolve) => {
       this._resolveReady = resolve;
-      this._rejectReady = reject;
+      BioViewerPanel._outputChannel.appendLine(`[Constructor] Ready promise initialized`);
     });
 
-    BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Constructor called with title: ${panel.title}`);
-    
-    // Set up message handling first
+    // Handle messages from the webview
     this._panel.webview.onDidReceiveMessage(
       message => {
-        BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Received message: ${JSON.stringify(message)}`);
+        BioViewerPanel._outputChannel.appendLine(`[Message] Received message from webview: ${JSON.stringify(message)}`);
         switch (message.command) {
           case 'ready':
-            BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Received ready signal');
-            if (!this._isReady) {  // Only set ready once
-              this._isReady = true;
-              if (this._resolveReady) {
-                this._resolveReady();
-              }
-            }
+            BioViewerPanel._outputChannel.appendLine(`[Message] Processing 'ready' command`);
+            this.handleReady();
+            BioViewerPanel.currentPanel = this;
             break;
-          case 'error':
-            BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Received error: ${message.error}`);
-            break;
-          case 'loaded':
-            BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Content loaded successfully');
-            this._isLoading = false;
-            break;
-          case 'loading':
-            BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Content loading started');
-            this._isLoading = true;
-            break;
+          default:
+            BioViewerPanel._outputChannel.appendLine(`[Message] Unknown command received: ${message.command}`);
         }
       },
-      undefined,
+      null,
       this._disposables
     );
 
-    // Track panel disposal
-    this._panel.onDidDispose(() => {
-      BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Panel disposed');
-      // Only clear currentPanel if it's this instance
-      if (BioViewerPanel.currentPanel === this) {
-        BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Clearing current panel reference');
-        BioViewerPanel.currentPanel = undefined;
-      }
-      this.dispose();
-    }, null, this._disposables);
-
-    // Set up webview content
-    try {
-      this._panel.webview.html = this._getWebviewContent(extensionUri);
-      BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Webview HTML content set');
-    } catch (error) {
-      BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Error setting webview content: ${error}`);
-      throw error;
-    }
-
-    // Track panel visibility
-    this._panel.onDidChangeViewState(e => {
-      BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Panel visibility changed: ${e.webviewPanel.visible}`);
-      if (e.webviewPanel.visible && !this._isInitialized) {
-        this._isInitialized = true;
-        BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Panel became visible for the first time');
-      }
-    });
-
-    // Add error handler for webview
-    this._panel.webview.onDidReceiveMessage(message => {
-      if (message.command === 'error') {
-        BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Webview error: ${message.error}`);
-      }
-    });
+    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+    BioViewerPanel._outputChannel.appendLine(`[Constructor] Panel initialization completed in ${Date.now() - startTime}ms`);
   }
 
-  public dispose() {
-    BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Disposing panel');
-    // Only clear currentPanel if it's this instance
-    if (BioViewerPanel.currentPanel === this) {
-      BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Clearing current panel reference');
-      BioViewerPanel.currentPanel = undefined;
+  private handleReady() {
+    BioViewerPanel._outputChannel.appendLine('Webview is ready');
+    if (this._resolveReady) {
+      this._resolveReady();
+      this._resolveReady = undefined;
     }
-
-    // Dispose of disposables
-    while (this._disposables.length) {
-      const disposable = this._disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
-    }
-
-    // Dispose of panel last
-    this._panel.dispose();
   }
 
   public async waitForReady(): Promise<void> {
-    BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Waiting for ready state');
-    try {
-      await this._readyPromise;
-      BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Ready state achieved');
-    } catch (error) {
-      BioViewerPanel._outputChannel.appendLine(`[BioViewerPanel] Failed to reach ready state: ${error}`);
-      throw error;
-    }
+    return this._readyPromise;
   }
 
   public static create(extensionUri: vscode.Uri, title: string = "BioViewer", outputChannel: vscode.OutputChannel): BioViewerPanel {
+    const startTime = Date.now();
     BioViewerPanel._outputChannel = outputChannel;
-    outputChannel.show(true);
+    BioViewerPanel._outputChannel.appendLine(`[Create] Creating new BioViewerPanel instance`);
+    BioViewerPanel._outputChannel.appendLine(`[Create] Title: ${title}, Extension URI: ${extensionUri.toString()}`);
+    
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
+    BioViewerPanel._outputChannel.appendLine(`[Create] Using view column: ${column || 'One (default)'}`);
 
-    // If we already have a panel, dispose it properly
-    if (BioViewerPanel.currentPanel) {
-      BioViewerPanel._outputChannel.appendLine('[BioViewerPanel] Disposing existing panel');
-      BioViewerPanel.currentPanel.dispose();
-      BioViewerPanel.currentPanel = undefined;
-    }
-
-    // Create a new panel
     const panel = vscode.window.createWebviewPanel(
-      'bioviewer',
+      "BioViewer",
       title,
-      vscode.ViewColumn.One,
+      column || vscode.ViewColumn.One,
       {
         enableScripts: true,
-        localResourceRoots: [extensionUri],
         retainContextWhenHidden: true
       }
     );
-
-    outputChannel.appendLine(`[BioViewerPanel] Creating new panel with title: ${title}`);
-    const newPanel = new BioViewerPanel(panel, extensionUri);
-    BioViewerPanel.currentPanel = newPanel;
-    return newPanel;
-  }
-
-  public static async createAndWait(extensionUri: vscode.Uri, title: string = "BioViewer", outputChannel: vscode.OutputChannel): Promise<BioViewerPanel> {
-    const panel = BioViewerPanel.create(extensionUri, title, outputChannel);
-    await panel.waitForReady();
-    return panel;
+    
+    const instance = new BioViewerPanel(panel, extensionUri);
+    BioViewerPanel._outputChannel.appendLine(`[Create] BioViewerPanel created successfully in ${Date.now() - startTime}ms`);
+    return instance;
   }
 
   public static getCurrentPanel(): BioViewerPanel | undefined {
@@ -173,23 +91,59 @@ export class BioViewerPanel {
   }
 
   public loadContent(command: string, params: any) {
-    BioViewerPanel._outputChannel.appendLine(`Sending message to webview: ${JSON.stringify({ command, ...params })}`);
-    this._panel.webview.postMessage({ command, ...params });
+    BioViewerPanel._outputChannel.appendLine(`[LoadContent] Loading content with command: ${command}`);
+    BioViewerPanel._outputChannel.appendLine(`[LoadContent] Parameters: ${JSON.stringify(params, null, 2)}`);
+    
+    try {
+      this._panel.webview.postMessage({ command, ...params });
+      BioViewerPanel._outputChannel.appendLine(`[LoadContent] Message posted successfully`);
+    } catch (error) {
+      BioViewerPanel._outputChannel.appendLine(`[LoadContent] Error posting message: ${error}`);
+      throw error;
+    }
   }
 
-  private _getWebviewContent(extensionUri: vscode.Uri) {
-    const htmlPath = path.join(extensionUri.fsPath, 'dist', 'webview', 'bioviewer.html');
-    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+  public dispose() {
+    BioViewerPanel._outputChannel.appendLine(`Disposing BioViewerPanel: ${this._panel.title}`);
+    BioViewerPanel.currentPanel = undefined;
+    this._panel.dispose();
+    while (this._disposables.length) {
+      const disposable = this._disposables.pop();
+      if (disposable) {
+        disposable.dispose();
+      }
+    }
+  }
 
-    const cssUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
-    const jsUri = this._panel.webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.js'));
-    const nonce = this.getNonce();
+  private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
+    const startTime = Date.now();
+    BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Generating webview content`);
+    
+    try {
+      const htmlPath = path.join(extensionUri.fsPath, 'dist', 'webview', 'bioviewer.html');
+      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Reading HTML from: ${htmlPath}`);
+      
+      let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] HTML file read successfully`);
 
-    htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
-    htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
-    htmlContent = htmlContent.replace('${nonce}', nonce.toString());
+      const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
+      const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.js'));
+      const nonce = this.getNonce();
 
-    return htmlContent;
+      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Resources prepared:`);
+      BioViewerPanel._outputChannel.appendLine(`  CSS URI: ${cssUri}`);
+      BioViewerPanel._outputChannel.appendLine(`  JS URI: ${jsUri}`);
+
+      htmlContent = htmlContent.replace('${cssUri}', cssUri.toString());
+      htmlContent = htmlContent.replace('${jsUri}', jsUri.toString());
+      htmlContent = htmlContent.replace('${nonce}', nonce.toString());
+
+      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Content generated successfully in ${Date.now() - startTime}ms`);
+      return htmlContent;
+    } catch (error) {
+      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Error generating content: ${error}`);
+      throw error;
+    }
   }
 
   private getNonce() {
@@ -203,16 +157,5 @@ export class BioViewerPanel {
 
   public getWebviewUri(uri: vscode.Uri): vscode.Uri {
     return this._panel.webview.asWebviewUri(uri);
-  }
-
-  // Get the webview panel
-  public getWebviewPanel(): vscode.WebviewPanel {
-    return this._panel;
-  }
-
-  public static log(message: string): void {
-    if (this._outputChannel) {
-      this._outputChannel.appendLine(message);
-    }
   }
 }

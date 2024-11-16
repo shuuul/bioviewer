@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   const commands = [
     vscode.commands.registerCommand("bioviewer.startBioViewer", () => startBioViewer(context)),
-    vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileUri: vscode.Uri | vscode.Uri[], selectedFiles?: vscode.Uri[]) => activateFromFiles(context, fileUri, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => activateFromFiles(context, fileUri, selectedFiles)),
     vscode.commands.registerCommand("bioviewer.activateFromFolder", (folderUri: vscode.Uri) => activateFromFolder(context, folderUri)),
     vscode.commands.registerCommand("bioviewer.appendFile", (fileUri?: vscode.Uri) => appendFile(context, fileUri))
   ];
@@ -69,39 +69,23 @@ async function startBioViewer(context: vscode.ExtensionContext) {
   }
 }
 
-async function activateFromFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri | vscode.Uri[], selectedFiles?: vscode.Uri[]) {
-  let filesToOpen: vscode.Uri[] = [];
-  
-  // Handle different ways files can be provided
-  if (Array.isArray(fileUri)) {
-    // Case 1: Direct array of URIs (used in tests)
-    filesToOpen = fileUri;
-  } else if (fileUri) {
-    // Case 2: Single URI with optional selectedFiles (from context menu)
-    filesToOpen = selectedFiles && selectedFiles.length > 0 ? selectedFiles : [fileUri];
-  } else {
-    // Case 3: No files provided, show file picker
-    filesToOpen = await selectFiles();
-  }
-
+async function activateFromFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) {
+  let filesToOpen = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
   if (filesToOpen.length === 0) { return; }
 
   const title = `BioViewer - ${filesToOpen.map(f => path.basename(f.fsPath)).join(', ')}`;
-  outputChannel.appendLine(`Creating panel with title: ${title}`);
+  const panel = BioViewerPanel.create(context.extensionUri, title, outputChannel);
+  
+  outputChannel.appendLine(`New panel created: ${panel}`);
+  outputChannel.appendLine(`Files to open: ${filesToOpen}`);
 
-  try {
-    // Create panel and wait for it to be ready
-    const panel = await BioViewerPanel.createAndWait(context.extensionUri, title, outputChannel);
-    outputChannel.appendLine('Panel is ready');
+  // Wait for the panel to be ready before loading files
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready');
 
-    // Load files
-    for (const file of filesToOpen) {
-      outputChannel.appendLine(`Loading file: ${file.fsPath}`);
-      await loadFile(panel, file);
-    }
-  } catch (error) {
-    outputChannel.appendLine(`Error creating panel or loading files: ${error}`);
-    throw error;
+  for (const file of filesToOpen) {
+    outputChannel.appendLine(`Loading file in new panel: ${file.fsPath}`);
+    await loadFile(panel, file);
   }
 }
 
@@ -144,20 +128,6 @@ async function appendFile(context: vscode.ExtensionContext, fileUri?: vscode.Uri
   filesToAppend.forEach(file => loadFile(panel, file));
 }
 
-async function selectFiles(): Promise<vscode.Uri[]> {
-  outputChannel.appendLine('Prompting user to select files');
-  const options: vscode.OpenDialogOptions = {
-    canSelectMany: true,
-    openLabel: 'Open in BioViewer',
-    filters: {
-      'Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4']
-    }
-  };
-  const result = await vscode.window.showOpenDialog(options);
-  outputChannel.appendLine(`User selected files: ${result?.map(uri => uri.fsPath).join(', ') || 'None'}`);
-  return result || [];
-}
-
 async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
   outputChannel.appendLine(`Loading file: ${fileUri.fsPath}`);
   const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
@@ -197,6 +167,20 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
     });
     resolve();
   });
+}
+
+async function selectFiles(): Promise<vscode.Uri[]> {
+  outputChannel.appendLine('Prompting user to select files');
+  const options: vscode.OpenDialogOptions = {
+    canSelectMany: true,
+    openLabel: 'Open in BioViewer',
+    filters: {
+      'Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4']
+    }
+  };
+  const result = await vscode.window.showOpenDialog(options);
+  outputChannel.appendLine(`User selected files: ${result?.map(uri => uri.fsPath).join(', ') || 'None'}`);
+  return result || [];
 }
 
 export function deactivate() {
