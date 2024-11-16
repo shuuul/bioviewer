@@ -9,6 +9,25 @@ export class BioViewerPanel {
   private static _outputChannel: vscode.OutputChannel;
   private _readyPromise: Promise<void>;
   private _resolveReady: (() => void) | undefined;
+  private _isReady: boolean = false;
+  private _isLoading: boolean = false;
+
+  // Static log method for testing
+  public static log(message: string) {
+    if (BioViewerPanel._outputChannel) {
+      BioViewerPanel._outputChannel.appendLine(message);
+    }
+  }
+
+  // Getter for testing
+  public get isReady(): boolean {
+    return this._isReady;
+  }
+
+  // Getter for testing
+  public get isLoading(): boolean {
+    return this._isLoading;
+  }
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     const startTime = Date.now();

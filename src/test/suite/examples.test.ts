@@ -31,9 +31,14 @@ suite('BioViewer Example Files Test Suite', () => {
             BioViewerPanel.log('\n=== Starting MRC File Test ===');
             
             // Clean up any existing panels
-            if (BioViewerPanel.getCurrentPanel()) {
+            let panel = BioViewerPanel.getCurrentPanel();
+            if (!panel) {
+                BioViewerPanel.log('No panel found, will retry...');
+            } else {
+                BioViewerPanel.log('Panel found, checking ready state');
+                BioViewerPanel.log(`Panel state - isReady: ${panel.isReady}, isLoading: ${panel.isLoading}`);
                 BioViewerPanel.log('Disposing existing panel');
-                BioViewerPanel.getCurrentPanel()?.dispose();
+                panel.dispose();
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
 

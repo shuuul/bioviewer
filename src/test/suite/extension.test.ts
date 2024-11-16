@@ -48,13 +48,13 @@ suite('BioViewer Extension Test Suite', () => {
 
             try {
                 BioViewerPanel.log('Panel found, checking ready state');
-                BioViewerPanel.log(`Panel state - isReady: ${panel['_isReady']}, isLoading: ${panel.isLoading}`);
+                BioViewerPanel.log(`Panel state - isReady: ${panel.isReady}, isLoading: ${panel.isLoading}`);
                 await panel.waitForReady();
                 BioViewerPanel.log('✓ Panel is ready');
                 return true;
             } catch (error) {
                 BioViewerPanel.log(`Failed attempt ${i + 1}: ${error}`);
-                BioViewerPanel.log(`Panel state at failure - isReady: ${panel['_isReady']}, isLoading: ${panel.isLoading}`);
+                BioViewerPanel.log(`Panel state at failure - isReady: ${panel.isReady}, isLoading: ${panel.isLoading}`);
                 if (i === maxAttempts - 1) {
                     BioViewerPanel.log('Max attempts reached, giving up');
                     return false;
