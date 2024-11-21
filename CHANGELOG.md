@@ -1,8 +1,8 @@
-# Change Log
+# Changelog
 
-All notable changes to the "BioViewer" extension will be documented in this file.
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased]
+### [0.0.11](https://github.com/shuuul/bioviewer/compare/v0.0.10...v0.0.11) (2024-11-21)
 
 ## [0.0.9] - 2024-11-16
 
