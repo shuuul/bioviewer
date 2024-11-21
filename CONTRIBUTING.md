@@ -25,6 +25,22 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 2. Update the package.json version number in a commit by itself.
 3. The PR will be merged once you have the sign-off of at least one other developer.
 
+## Commit Guidelines
+
+We use Commitizen for standardized commit messages. Instead of using `git commit`, please use either:
+
+```bash
+npm run commit
+```
+
+or
+
+```bash
+npx cz
+```
+
+This will launch an interactive prompt to help you create a standardized commit message. The commit message format follows the [Conventional Commits specification](https://www.conventionalcommits.org/), which helps maintain a clear and standardized git history.
+
 ## Any Contributions You Make Will Be Under the MIT Software License
 
 In short, when you submit code changes, your submissions are understood to be under the same [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
