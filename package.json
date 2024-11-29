@@ -4,7 +4,7 @@
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
   "version": "0.0.12",
-  "icon": "resources/img/icon.png",
+  "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/shuuul/bioviewer.git"

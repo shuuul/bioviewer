@@ -36,7 +36,20 @@ const copyMolstarPlugin = {
 		console.log('Copied Molstar module to dist/molstar/');
 	  });
 	},
-  };
+};
+
+const copyResourcesPlugin = {
+	name: 'copy-resources-plugin',
+	setup(build) {
+		build.onEnd(() => {
+			const resourcesSrcDir = path.join(__dirname, 'resources');
+			const resourcesDestDir = path.join(__dirname, 'dist', 'resources');
+			fs.ensureDirSync(resourcesDestDir);
+			fs.copySync(resourcesSrcDir, resourcesDestDir);
+			console.log('Copied resources to dist/resources/');
+		});
+	},
+};
 
 /**
  * @type {import('esbuild').Plugin}
@@ -72,6 +85,7 @@ async function main() {
 			esbuildProblemMatcherPlugin,
 			copyHtmlPlugin,
 			copyMolstarPlugin,
+			copyResourcesPlugin
 		],
 	});
 	if (watch) {
