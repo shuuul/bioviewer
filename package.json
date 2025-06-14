@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -19,8 +19,8 @@
   },
   "license": "MIT",
   "engines": {
-    "vscode": "^1.93.0",
-    "node": ">=16.0.0"
+    "vscode": "^1.101.0",
+    "node": ">=18.0.0"
   },
   "categories": [
     "Other",
@@ -98,24 +98,24 @@
     "test:vsix": "npm run build:vsix && code --install-extension releases/bioviewer.vsix"
   },
   "devDependencies": {
-    "@types/mocha": "^10.0.7",
+    "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.91.0",
-    "@typescript-eslint/eslint-plugin": "^8.3.0",
-    "@typescript-eslint/parser": "^8.3.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
+    "@types/vscode": "^1.101.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
     "commitizen": "^4.3.1",
     "cz-conventional-changelog": "^3.3.0",
-    "esbuild": "^0.23.1",
-    "eslint": "^9.9.1",
+    "esbuild": "^0.25.5",
+    "eslint": "^9.29.0",
     "npm-run-all": "^4.1.5",
     "standard-version": "^9.5.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "fs-extra": "^11.2.0",
-    "molstar": "^4.6.0"
+    "fs-extra": "^11.3.0",
+    "molstar": "^4.18.0"
   },
   "files": [
     "dist",
