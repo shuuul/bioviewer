@@ -4,11 +4,51 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
         <link rel="icon" href="./favicon.ico" type="image/x-icon">
-        <title>BioViewer</title>
+        <title>BioViewer - Biological Structure Viewer</title>
         <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; height: 100%; overflow: hidden; }
-            #app { width: 100%; height: 100%; }
+            * { 
+                margin: 0; 
+                padding: 0; 
+                box-sizing: border-box; 
+            }
+            
+            html, body { 
+                width: 100%; 
+                height: 100%; 
+                overflow: hidden;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            
+            #app { 
+                width: 100%; 
+                height: 100%; 
+                background-color: #f5f5f5;
+            }
+            
+            /* Loading indicator */
+            .loading {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100%;
+                flex-direction: column;
+                color: #666;
+            }
+            
+            .loading-spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #0078d4;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 16px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
         </style>
         <link rel="stylesheet" type="text/css" href="${cssUri}" />
     </head>
@@ -16,25 +56,47 @@
         <div id="app"></div>
         <script nonce="${nonce}" type="text/javascript" src="${jsUri}"></script>
         <script nonce="${nonce}" type="text/javascript">
+            /**
+             * Utility function to extract URL parameters
+             * @param {string} name - Parameter name
+             * @param {string} regex - Regular expression pattern
+             * @returns {string} Parameter value or empty string
+             */
             function getParam(name, regex) {
-                var r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
+                const r = new RegExp(name + '=' + '(' + regex + ')[&]?', 'i');
                 return decodeURIComponent(((window.location.search || '').match(r) || [])[1] || '');
             }
-            var debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
+
+            // Parse URL parameters for Mol* configuration
+            const debugMode = getParam('debug-mode', '[^&]+').trim() === '1';
             if (debugMode) molstar.setDebugMode(debugMode, debugMode);
 
-            var hideControls = getParam('hide-controls', '[^&]+').trim() === '1';
-            var collapseLeftPanel = getParam('collapse-left-panel', '[^&]+').trim() === '1';
-            var pdbProvider = getParam('pdb-provider', '[^&]+').trim().toLowerCase();
-            var emdbProvider = getParam('emdb-provider', '[^&]+').trim().toLowerCase();
-            var mapProvider = getParam('map-provider', '[^&]+').trim().toLowerCase();
-            var pixelScale = getParam('pixel-scale', '[^&]+').trim();
-            var pickScale = getParam('pick-scale', '[^&]+').trim();
-            var pickPadding = getParam('pick-padding', '[^&]+').trim();
-            var disableWboit = getParam('disable-wboit', '[^&]+').trim() === '1';
-            var preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
+            const hideControls = getParam('hide-controls', '[^&]+').trim() === '1';
+            const collapseLeftPanel = getParam('collapse-left-panel', '[^&]+').trim() === '1';
+            const pdbProvider = getParam('pdb-provider', '[^&]+').trim().toLowerCase();
+            const emdbProvider = getParam('emdb-provider', '[^&]+').trim().toLowerCase();
+            const mapProvider = getParam('map-provider', '[^&]+').trim().toLowerCase();
+            const pixelScale = getParam('pixel-scale', '[^&]+').trim();
+            const pickScale = getParam('pick-scale', '[^&]+').trim();
+            const pickPadding = getParam('pick-padding', '[^&]+').trim();
+            const disableWboit = getParam('disable-wboit', '[^&]+').trim() === '1';
+            const preferWebgl1 = getParam('prefer-webgl1', '[^&]+').trim() === '1' || void 0;
 
-            console.log('Initializing BioViewer');
+            // Acquire the VS Code API
+            const vscode = acquireVsCodeApi();
+            
+            /**
+             * Send a message to the extension
+             * @param {string} command - The command type
+             * @param {object} data - Additional data to send
+             */
+            function sendMessage(command, data = {}) {
+                vscode.postMessage({ command, ...data });
+            }
+
+            console.log('Initializing BioViewer with Mol* viewer...');
+            
+            // Initialize Mol* viewer with configuration
             molstar.Viewer.create('app', {
                 layoutShowControls: !hideControls,
                 viewportShowExpand: false,
@@ -50,56 +112,229 @@
                 enableWboit: disableWboit ? true : void 0,
                 preferWebgl1: preferWebgl1,
             }).then(viewer => {
-                console.log('BioViewer panel initializing...');
-                console.log('Viewer methods:', Object.keys(viewer));
+                console.log('Mol* viewer created successfully');
+                console.log('Available viewer methods:', Object.keys(viewer));
+                // Set up message handling from the extension
                 window.addEventListener('message', event => {
                     const message = event.data;
-                    console.log('Received message in webview:', message);
-                    switch (message.command) {
-                        case 'executeCommand':
-                            eval(message.command)
-                                .then(() => console.log('Command executed successfully'))
-                                .catch(error => console.error('Error executing command:', error));
-                            break;
-                        case 'loadPdb':
-                            viewer.loadPdb(message.accession)
-                                .then(() => console.log('PDB loaded successfully'))
-                                .catch(error => console.error('Error loading PDB:', error));
-                            break;
-                        case 'loadAlphaFoldDb':
-                            viewer.loadAlphaFoldDb(message.accession)
-                                .then(() => console.log('AlphaFoldDB loaded successfully'))
-                                .catch(error => console.error('Error loading AlphaFoldDB:', error));
-                            break;
-                        case 'loadEmdb':
-                            viewer.loadEmdb('emd-' + message.accession)
-                                .then(() => console.log('EMDB loaded successfully'))
-                                .catch(error => console.error('Error loading EMDB:', error));
-                            break;
-                        case 'loadStructure':
-                            viewer.loadStructureFromUrl(message.url, message.format)
-                                .then(() => console.log('Structure loaded successfully'))
-                                .catch(error => console.error('Error loading structure:', error));
-                            break;
-                        case 'loadVolume':
-                            viewer.loadVolumeFromUrl(
-                                { url: message.url, format: message.format, isBinary: message.isBinary },
-                                [{ type: 'absolute', value: 0.1, color: 0x33BB33, alpha: 0.34, entryId: message.label}]
-                            ).then(() => console.log('Volume loaded successfully'))
-                              .catch(error => console.error('Error loading volume:', error));
-                            break;
-                        default:
-                            console.log('Unknown command:', message.command);
+                    console.log('Received message from extension:', message);
+                    
+                    // Only handle messages that come from the extension (not from Mol* itself)
+                    if (message && typeof message.command === 'string') {
+                        console.log('Processing command from extension:', message.command);
+                        handleCommand(viewer, message);
+                    } else {
+                        console.log('Ignoring non-command message:', message);
                     }
                 });
+                
+                /**
+                 * Handle commands from the extension
+                 * @param {object} viewer - The Mol* viewer instance
+                 * @param {object} message - The message from the extension
+                 */
+                function handleCommand(viewer, message) {
+                    switch (message.command) {
+                        case 'executeCommand':
+                            executeCustomCommand(message.code)
+                                .then(() => {
+                                    console.log('Custom command executed successfully');
+                                    sendMessage('info', { info: 'Custom command executed' });
+                                })
+                                .catch(error => {
+                                    console.error('Error executing custom command:', error);
+                                    sendMessage('error', { error: `Failed to execute custom command: ${error.message}` });
+                                });
+                            break;
+                            
+                        case 'loadPdb':
+                            console.log(`Loading PDB structure: ${message.accession}`);
+                            viewer.loadPdb(message.accession)
+                                .then(() => {
+                                    console.log(`PDB ${message.accession} loaded successfully`);
+                                    sendMessage('info', { info: `Loaded PDB: ${message.accession}` });
+                                })
+                                .catch(error => {
+                                    console.error('Error loading PDB:', error);
+                                    sendMessage('error', { error: `Failed to load PDB ${message.accession}: ${error.message}` });
+                                });
+                            break;
+                            
+                        case 'loadAlphaFoldDb':
+                            console.log(`Loading AlphaFoldDB structure: ${message.accession}`);
+                            viewer.loadAlphaFoldDb(message.accession)
+                                .then(() => {
+                                    console.log(`AlphaFoldDB ${message.accession} loaded successfully`);
+                                    sendMessage('info', { info: `Loaded AlphaFoldDB: ${message.accession}` });
+                                })
+                                .catch(error => {
+                                    console.error('Error loading AlphaFoldDB:', error);
+                                    sendMessage('error', { error: `Failed to load AlphaFoldDB ${message.accession}: ${error.message}` });
+                                });
+                            break;
+                            
+                        case 'loadEmdb':
+                            const emdbId = 'emd-' + message.accession;
+                            console.log(`Loading EMDB structure: ${emdbId}`);
+                            viewer.loadEmdb(emdbId)
+                                .then(() => {
+                                    console.log(`EMDB ${emdbId} loaded successfully`);
+                                    sendMessage('info', { info: `Loaded EMDB: ${emdbId}` });
+                                })
+                                .catch(error => {
+                                    console.error('Error loading EMDB:', error);
+                                    sendMessage('error', { error: `Failed to load EMDB ${emdbId}: ${error.message}` });
+                                });
+                            break;
+                            
+                        case 'loadStructure':
+                            console.log(`Loading structure from data: ${message.label}`);
+                            viewer.loadStructureFromData(message.data, message.format, message.isBinary)
+                                .then((result) => {
+                                    console.log(`Structure ${message.label} loaded successfully`);
+                                    console.log('Load result:', result);
+                                    
+                                    
+                                    sendMessage('info', { info: `Loaded structure: ${message.label}` });
+                                })
+                                .catch(error => {
+                                    console.error('Error loading structure:', error);
+                                    sendMessage('error', { error: `Failed to load structure ${message.label}: ${error.message}` });
+                                });
+                            break;
+                            
+                        case 'loadVolume':
+                            console.log(`Loading volume/density map: ${message.label}`);
+                            console.log(`Data size: ${message.data.length} chars, isBinary: ${message.isBinary}`);
+                            console.log(`Available volume methods:`, Object.keys(viewer).filter(k => k.toLowerCase().includes('volume')));
+                            
+                            // Try to find the correct volume loading method
+                            if (viewer.loadVolumeFromUrl) {
+                                try {
+                                    // Create a Blob instead of data URL for better memory efficiency
+                                    let blob;
+                                    if (message.isBinary) {
+                                        // Convert base64 to binary in chunks to avoid memory issues
+                                        console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes`);
+                                        
+                                        const binaryString = atob(message.data);
+                                        const chunkSize = 1024 * 1024; // 1MB chunks
+                                        const chunks = [];
+                                        
+                                        for (let i = 0; i < binaryString.length; i += chunkSize) {
+                                            const chunk = binaryString.slice(i, i + chunkSize);
+                                            const bytes = new Uint8Array(chunk.length);
+                                            for (let j = 0; j < chunk.length; j++) {
+                                                bytes[j] = chunk.charCodeAt(j);
+                                            }
+                                            chunks.push(bytes);
+                                        }
+                                        
+                                        blob = new Blob(chunks, { type: 'application/octet-stream' });
+                                        console.log(`Created blob from ${chunks.length} chunks`);
+                                    } else {
+                                        blob = new Blob([message.data], { type: 'text/plain' });
+                                    }
+                                    
+                                    const blobUrl = URL.createObjectURL(blob);
+                                    console.log(`Created blob URL: ${blobUrl}`);
+                                    
+                                    const isosurfaces = [{
+                                        type: 'absolute',
+                                        value: 0.1,
+                                        color: 0x33BB33,
+                                        alpha: 0.34,
+                                        entryId: message.label
+                                    }];
+                                    
+                                    // Try different parameter formats for naming
+                                    const volumeParams = { 
+                                        url: blobUrl, 
+                                        format: message.format, 
+                                        isBinary: message.isBinary,
+                                        label: message.label,
+                                        name: message.label,
+                                        id: message.label
+                                    };
+                                    
+                                    viewer.loadVolumeFromUrl(volumeParams, isosurfaces)
+                                        .then((result) => {
+                                            console.log(`Volume ${message.label} loaded successfully`);
+                                            console.log('Volume load result:', result);
+                                            
+                                            // Try to rename the volume after loading
+                                            if (viewer.plugin && viewer.plugin.managers && viewer.plugin.managers.volume) {
+                                                try {
+                                                    const volumes = viewer.plugin.managers.volume.hierarchy.current.volumes;
+                                                    if (volumes && volumes.length > 0) {
+                                                        const lastVolume = volumes[volumes.length - 1];
+                                                        console.log('Attempting to rename volume:', lastVolume);
+                                                        // Try to update the label
+                                                        if (lastVolume.cell && lastVolume.cell.obj && lastVolume.cell.obj.label) {
+                                                            lastVolume.cell.obj.label = message.label;
+                                                        }
+                                                    }
+                                                } catch (renameError) {
+                                                    console.log('Could not rename volume:', renameError);
+                                                }
+                                            }
+                                            
+                                            URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                            sendMessage('info', { info: `Loaded volume: ${message.label}` });
+                                        })
+                                        .catch(error => {
+                                            console.error('Error loading volume:', error);
+                                            URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                            sendMessage('error', { error: `Failed to load volume ${message.label}: ${error.message}` });
+                                        });
+                                } catch (error) {
+                                    console.error('Error creating blob for volume:', error);
+                                    sendMessage('error', { error: `Failed to create blob for volume ${message.label}: ${error.message}` });
+                                }
+                            } else {
+                                sendMessage('error', { error: `Volume loading not supported in this Mol* version` });
+                            }
+                            break;
+                            
+                        default:
+                            console.warn('Unknown command received:', message.command);
+                            sendMessage('error', { error: `Unknown command: ${message.command}` });
+                    }
+                }
+                
+                /**
+                 * Execute custom JavaScript code (with safety measures)
+                 * @param {string} code - The code to execute
+                 * @returns {Promise} Promise resolving when code execution completes
+                 */
+                async function executeCustomCommand(code) {
+                    // Basic safety check - don't allow dangerous operations
+                    if (code.includes('eval') || code.includes('Function') || code.includes('setTimeout') || code.includes('setInterval')) {
+                        throw new Error('Code contains potentially dangerous operations');
+                    }
+                    
+                    // Execute the code in a controlled context
+                    return new Function('viewer', 'console', 'sendMessage', code)(viewer, console, sendMessage);
+                }
+                // Notify extension that the viewer is ready
+                console.log('BioViewer initialization complete, notifying extension...');
+                sendMessage('ready');
+                
+            }).catch(error => {
+                console.error('Failed to initialize Mol* viewer:', error);
+                sendMessage('error', { error: `Failed to initialize viewer: ${error.message}` });
             });
-
-            // Acquire the VS Code API
-            const vscode = acquireVsCodeApi();
-            console.log('Initilazed. Send the ready state to backend.')
-            window.onload = () => {
-                vscode.postMessage({ command: 'ready' });
-            }
+            
+            // Handle any unhandled errors
+            window.addEventListener('error', (event) => {
+                console.error('Unhandled error in webview:', event.error);
+                sendMessage('error', { error: `Webview error: ${event.error?.message || 'Unknown error'}` });
+            });
+            
+            window.addEventListener('unhandledrejection', (event) => {
+                console.error('Unhandled promise rejection in webview:', event.reason);
+                sendMessage('error', { error: `Promise rejection: ${event.reason?.message || 'Unknown rejection'}` });
+            });
         </script>
     </body>
 </html>

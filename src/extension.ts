@@ -2,187 +2,338 @@ import * as vscode from 'vscode';
 import { BioViewerPanel } from './panels/BioViewerPanel';
 import * as path from 'path';
 
+// Output channel for logging extension activities
 let outputChannel = vscode.window.createOutputChannel("BioViewer");
 
+/**
+ * Activates the BioViewer extension and registers all commands
+ * @param context - The extension context provided by VS Code
+ */
 export function activate(context: vscode.ExtensionContext) {
   outputChannel.appendLine('BioViewer extension is now active');
 
+  // Register all extension commands
   const commands = [
-    vscode.commands.registerCommand("bioviewer.startBioViewer", () => startBioViewer(context)),
-    vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => activateFromFiles(context, fileUri, selectedFiles)),
-    vscode.commands.registerCommand("bioviewer.activateFromFolder", (folderUri: vscode.Uri) => activateFromFolder(context, folderUri)),
-    vscode.commands.registerCommand("bioviewer.appendFile", (fileUri?: vscode.Uri) => appendFile(context, fileUri))
+    vscode.commands.registerCommand("bioviewer.openFromDatabase", () => openFromDatabase(context)),
+    vscode.commands.registerCommand("bioviewer.openFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => openFiles(context, fileUri, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.openFolder", (folderUri: vscode.Uri) => openFolder(context, folderUri)),
+    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri) => addFiles(context, fileUri))
   ];
 
   context.subscriptions.push(...commands);
 }
 
-async function startBioViewer(context: vscode.ExtensionContext) {
-  outputChannel.appendLine('Starting BioViewer');
-  const options = ['PDB', 'AlphaFoldDB (UniProt)', 'EMDB'];
-  const selection = await vscode.window.showQuickPick(options, { placeHolder: 'Select file type' });
+/**
+ * Opens structures from online databases (PDB, AlphaFoldDB, EMDB)
+ * Prompts user to select database type and enter accession ID
+ * @param context - The extension context
+ */
+async function openFromDatabase(context: vscode.ExtensionContext) {
+  outputChannel.appendLine('Opening structure from database');
   
-  if (selection) {
-    outputChannel.appendLine(`User selected: ${selection}`);
-    let placeholder = '';
-    switch (selection) {
-      case 'PDB':
-        placeholder = 'Enter PDB ID (e.g. 6giq)';
-        break;
-      case 'AlphaFoldDB (UniProt)':
-        placeholder = 'Enter UniProt ID (e.g. P68871)';
-        break;
-      case 'EMDB':
-        placeholder = 'Enter EMDB ID (e.g. 1234)';
-        break;
-    }
+  // Available database options
+  const options = ['PDB', 'AlphaFoldDB (UniProt)', 'EMDB'];
+  const selection = await vscode.window.showQuickPick(options, { 
+    placeHolder: 'Select database type' 
+  });
+  
+  if (!selection) {
+    outputChannel.appendLine('User cancelled database selection');
+    return;
+  }
 
-    const accession = await vscode.window.showInputBox({
-      placeHolder: placeholder,
-    });
+  outputChannel.appendLine(`User selected: ${selection}`);
+  
+  // Get appropriate placeholder text and command for selected database
+  const { placeholder, command } = getDatabaseConfig(selection);
+  
+  const accession = await vscode.window.showInputBox({
+    placeHolder: placeholder,
+    prompt: `Enter the ${selection} identifier`
+  });
 
-    if (accession) {
-      outputChannel.appendLine(`User entered accession: ${accession}`);
-      let command = '';
-      switch (selection) {
-        case 'PDB':
-          command = 'loadPdb';
-          break;
-        case 'AlphaFoldDB (UniProt)':
-          command = `loadAlphaFoldDb`;
-          break;
-        case 'EMDB':
-          command = `loadEmdb`;
-          break;
-      }
-	  const panel = BioViewerPanel.create(context.extensionUri, `BioViewer - ${selection}-${accession}`, outputChannel);
+  if (!accession?.trim()) {
+    outputChannel.appendLine('User cancelled or entered empty accession');
+    return;
+  }
 
-	  // Wait for the panel to be ready before loading files
-    await panel.waitForReady();
-    outputChannel.appendLine('Panel is ready');
-	  
-	  panel.loadContent(command, { accession: accession });
-      outputChannel.appendLine(`Sending load command to panel: ${command}`);
-    } else {
-      outputChannel.appendLine('User cancelled selection');
-    }
+  outputChannel.appendLine(`User entered accession: ${accession}`);
+  
+  // Create new panel and load structure
+  const panel = BioViewerPanel.create(
+    context.extensionUri, 
+    `BioViewer - ${selection}: ${accession}`, 
+    outputChannel
+  );
+
+  // Wait for the panel to be ready before loading structure
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready');
+  
+  panel.loadContent(command, { accession: accession });
+  outputChannel.appendLine(`Loading ${selection} structure: ${accession}`);
+}
+
+/**
+ * Gets database-specific configuration for placeholders and commands
+ * @param selection - The selected database type
+ * @returns Object containing placeholder text and command
+ */
+function getDatabaseConfig(selection: string): { placeholder: string; command: string } {
+  switch (selection) {
+    case 'PDB':
+      return { placeholder: 'Enter PDB ID (e.g. 6giq)', command: 'loadPdb' };
+    case 'AlphaFoldDB (UniProt)':
+      return { placeholder: 'Enter UniProt ID (e.g. P68871)', command: 'loadAlphaFoldDb' };
+    case 'EMDB':
+      return { placeholder: 'Enter EMDB ID (e.g. 1234)', command: 'loadEmdb' };
+    default:
+      throw new Error(`Unknown database selection: ${selection}`);
   }
 }
 
-async function activateFromFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) {
-  let filesToOpen = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
-  if (filesToOpen.length === 0) { return; }
+/**
+ * Opens selected files in a new BioViewer panel
+ * @param context - The extension context
+ * @param fileUri - The primary file URI (when called from context menu)
+ * @param selectedFiles - Array of selected files (when multiple files selected)
+ */
+async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) {
+  // Use selected files if available, otherwise prompt user to select files
+  const filesToOpen = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
+  
+  if (filesToOpen.length === 0) {
+    outputChannel.appendLine('No files selected to open');
+    return;
+  }
 
-  const title = `BioViewer - ${filesToOpen.map(f => path.basename(f.fsPath)).join(', ')}`;
+  // Create descriptive panel title from file names
+  const fileNames = filesToOpen.map(f => path.basename(f.fsPath));
+  const title = fileNames.length > 3 
+    ? `BioViewer - ${fileNames.slice(0, 2).join(', ')} and ${fileNames.length - 2} more`
+    : `BioViewer - ${fileNames.join(', ')}`;
+    
   const panel = BioViewerPanel.create(context.extensionUri, title, outputChannel);
   
-  outputChannel.appendLine(`New panel created: ${panel}`);
-  outputChannel.appendLine(`Files to open: ${filesToOpen}`);
+  outputChannel.appendLine(`Created new panel for ${filesToOpen.length} file(s)`);
+  outputChannel.appendLine(`Files: ${filesToOpen.map(f => f.fsPath).join(', ')}`);
 
   // Wait for the panel to be ready before loading files
   await panel.waitForReady();
-  outputChannel.appendLine('Panel is ready');
+  outputChannel.appendLine('Panel is ready, loading files...');
 
+  // Load all files sequentially
   for (const file of filesToOpen) {
-    outputChannel.appendLine(`Loading file in new panel: ${file.fsPath}`);
+    outputChannel.appendLine(`Loading file: ${path.basename(file.fsPath)}`);
     await loadFile(panel, file);
   }
+  
+  outputChannel.appendLine(`Successfully loaded ${filesToOpen.length} file(s)`);
 }
 
-async function activateFromFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
-  const files = await vscode.workspace.findFiles(`${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc}`);
+/**
+ * Opens all supported files from a folder in a new BioViewer panel
+ * @param context - The extension context
+ * @param folderUri - The folder URI to scan for supported files
+ */
+async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
+  // Find all supported file types in the folder
+  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4}`;
+  const files = await vscode.workspace.findFiles(searchPattern);
+  
   if (files.length === 0) {
+    vscode.window.showInformationMessage(
+      `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`
+    );
     outputChannel.appendLine(`No supported files found in folder: ${folderUri.fsPath}`);
     return;
   }
 
-  const title = `BioViewer - ${path.basename(folderUri.fsPath)}`;
+  const folderName = path.basename(folderUri.fsPath);
+  const title = `BioViewer - ${folderName} (${files.length} files)`;
   const panel = BioViewerPanel.create(context.extensionUri, title, outputChannel);
   
-  outputChannel.appendLine(`New panel created for folder: ${panel}`);
-  outputChannel.appendLine(`Files found in folder: ${files}`);
+  outputChannel.appendLine(`Created panel for folder: ${folderName}`);
+  outputChannel.appendLine(`Found ${files.length} supported files`);
 
   // Wait for the panel to be ready before loading files
   await panel.waitForReady();
-  outputChannel.appendLine('Panel is ready');
+  outputChannel.appendLine('Panel is ready, loading folder contents...');
 
+  // Load all files from the folder
   for (const file of files) {
-    outputChannel.appendLine(`Loading file from folder in new panel: ${file.fsPath}`);
+    outputChannel.appendLine(`Loading file from folder: ${path.basename(file.fsPath)}`);
     await loadFile(panel, file);
   }
+  
+  outputChannel.appendLine(`Successfully loaded ${files.length} files from folder: ${folderName}`);
 }
 
-async function appendFile(context: vscode.ExtensionContext, fileUri?: vscode.Uri) {
-  const filesToAppend = fileUri ? [fileUri] : await selectFiles();
-  if (filesToAppend.length === 0) {return;}
+/**
+ * Adds files to the current BioViewer panel, or creates a new panel if none exists
+ * @param context - The extension context
+ * @param fileUri - Optional single file URI (when called from context menu)
+ */
+async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri) {
+  // Get files to add - either the provided file or prompt user to select
+  const filesToAdd = fileUri ? [fileUri] : await selectFiles();
+  
+  if (filesToAdd.length === 0) {
+    outputChannel.appendLine('No files selected to add');
+    return;
+  }
 
-  // Get the current panel or create a new one if it doesn't exist
+  // Get the current panel or create a new one if none exists
   let panel = BioViewerPanel.getCurrentPanel();
   if (!panel) {
+    outputChannel.appendLine('No active panel found, creating new panel');
     panel = BioViewerPanel.create(context.extensionUri, "BioViewer", outputChannel);
     // Wait for the new panel to be ready
     await panel.waitForReady();
     outputChannel.appendLine('New panel created and ready');
   }
 
-  filesToAppend.forEach(file => loadFile(panel, file));
+  outputChannel.appendLine(`Adding ${filesToAdd.length} file(s) to current panel`);
+  
+  // Add all files to the current panel
+  for (const file of filesToAdd) {
+    outputChannel.appendLine(`Adding file: ${path.basename(file.fsPath)}`);
+    await loadFile(panel, file);
+  }
+  
+  outputChannel.appendLine(`Successfully added ${filesToAdd.length} file(s) to panel`);
 }
 
-async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri) {
-  outputChannel.appendLine(`Loading file: ${fileUri.fsPath}`);
+/**
+ * Loads a file into the specified BioViewer panel
+ * Determines the appropriate format and command based on file extension
+ * @param panel - The BioViewer panel to load the file into
+ * @param fileUri - The URI of the file to load
+ */
+async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<void> {
+  const fileName = path.basename(fileUri.fsPath);
   const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
-  const webviewUri = panel.getWebviewUri(fileUri);
   
-  let format: string;
-  let command: string;
+  outputChannel.appendLine(`Processing file: ${fileName}`);
   
-  if (['.pdb', '.ent'].includes(fileExtension)) {
-    format = 'pdb';
-    command = 'loadStructure';
-  } else if (['.cif', '.mmcif', '.mcif'].includes(fileExtension)) {
-    format = 'mmcif';
-    command = 'loadStructure';
-  } else if (['.map', '.mrc', '.ccp4'].includes(fileExtension)) {
-    format = 'ccp4';
-    command = 'loadVolume';
-  } else {
-    outputChannel.appendLine(`Unsupported file format: ${fileExtension}`);
+  // Determine format and command based on file extension
+  const fileConfig = getFileConfig(fileExtension);
+  if (!fileConfig) {
+    const errorMsg = `Unsupported file format: ${fileExtension}`;
+    outputChannel.appendLine(errorMsg);
+    vscode.window.showErrorMessage(`BioViewer: ${errorMsg}`);
     return;
   }
 
-  outputChannel.appendLine(`Command: ${command}`);
-  outputChannel.appendLine(`Params: ${JSON.stringify({
-    url: webviewUri.toString(),
-    format,
-    isBinary: format === 'ccp4',
-    label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
-  })}`);
-
-  return new Promise<void>((resolve) => {
-    panel.loadContent(command, {
-      url: webviewUri.toString(),
+  const { format, command } = fileConfig;
+  
+  try {
+    // Check file size first
+    const fileStats = await vscode.workspace.fs.stat(fileUri);
+    const fileSizeBytes = fileStats.size;
+    const fileSizeMB = fileSizeBytes / (1024 * 1024);
+    
+    outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
+    
+    // For very large files (>50MB), warn user and potentially skip
+    if (fileSizeMB > 50) {
+      const proceed = await vscode.window.showWarningMessage(
+        `File ${fileName} is ${fileSizeMB.toFixed(2)} MB. Loading large files may cause performance issues. Continue?`,
+        'Yes', 'No'
+      );
+      if (proceed !== 'Yes') {
+        outputChannel.appendLine(`User cancelled loading of large file: ${fileName}`);
+        return;
+      }
+    }
+    
+    // Read file content and convert to base64 for binary files or text for text files
+    const fileContent = await vscode.workspace.fs.readFile(fileUri);
+    const isBinary = format === 'ccp4';
+    
+    let data: string;
+    if (isBinary) {
+      // Convert binary content to base64
+      data = Buffer.from(fileContent).toString('base64');
+    } else {
+      // Convert text content to string
+      data = Buffer.from(fileContent).toString('utf8');
+    }
+    
+    const loadParams = {
+      data,
       format,
-      isBinary: format === 'ccp4',
-      label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath))
-    });
-    resolve();
-  });
+      isBinary,
+      label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath)),
+      fileSize: fileSizeBytes
+    };
+
+    outputChannel.appendLine(`Loading with command: ${command}, format: ${format}`);
+    
+    panel.loadContent(command, loadParams);
+    outputChannel.appendLine(`Successfully queued loading of: ${fileName}`);
+  } catch (error) {
+    const errorMsg = `Failed to load file: ${fileName}`;
+    outputChannel.appendLine(`${errorMsg} - ${error}`);
+    vscode.window.showErrorMessage(`BioViewer: ${errorMsg}`);
+  }
 }
 
+/**
+ * Gets file format configuration based on file extension
+ * @param extension - The file extension (with dot)
+ * @returns File configuration object or null if unsupported
+ */
+function getFileConfig(extension: string): { format: string; command: string } | null {
+  // Structure file formats
+  if (['.pdb', '.ent'].includes(extension)) {
+    return { format: 'pdb', command: 'loadStructure' };
+  }
+  if (['.cif', '.mmcif', '.mcif'].includes(extension)) {
+    return { format: 'mmcif', command: 'loadStructure' };
+  }
+  // Volume/density map formats
+  if (['.map', '.mrc', '.ccp4'].includes(extension)) {
+    return { format: 'ccp4', command: 'loadVolume' };
+  }
+  
+  return null;
+}
+
+/**
+ * Prompts user to select biological structure files
+ * @returns Array of selected file URIs
+ */
 async function selectFiles(): Promise<vscode.Uri[]> {
   outputChannel.appendLine('Prompting user to select files');
+  
   const options: vscode.OpenDialogOptions = {
     canSelectMany: true,
     openLabel: 'Open in BioViewer',
+    title: 'Select Biological Structure Files',
     filters: {
-      'Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4']
+      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4'],
+      'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent'],
+      'Volume/Density Maps': ['map', 'mrc', 'ccp4']
     }
   };
+  
   const result = await vscode.window.showOpenDialog(options);
-  outputChannel.appendLine(`User selected files: ${result?.map(uri => uri.fsPath).join(', ') || 'None'}`);
+  const fileCount = result?.length || 0;
+  
+  outputChannel.appendLine(`User selected ${fileCount} file(s)`);
+  if (result && result.length > 0) {
+    outputChannel.appendLine(`Selected files: ${result.map(uri => path.basename(uri.fsPath)).join(', ')}`);
+  }
+  
   return result || [];
 }
 
+/**
+ * Deactivates the BioViewer extension
+ * Called when the extension is deactivated by VS Code
+ */
 export function deactivate() {
   outputChannel.appendLine('BioViewer extension is deactivating');
+  // Cleanup is handled automatically by VS Code for registered commands and disposables
 }
