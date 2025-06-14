@@ -120,7 +120,8 @@
   "files": [
     "dist",
     "dist/webview/bioviewer.html",
-    "dist/molstar"
+    "dist/molstar",
+    "LICENSE"
   ],
   "galleryBanner": {
     "color": "#C80000",
