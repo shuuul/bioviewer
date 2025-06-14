@@ -91,7 +91,7 @@ Right-click on supported files in the Explorer to:
 
 ## ⚙️ Requirements
 
-- **Visual Studio Code**: ^1.101.0
+- **Visual Studio Code**: ^1.96.2
 - **Node.js**: >=18.0.0 (for development)
 - **Internet Connection**: Required for loading structures from online databases
 

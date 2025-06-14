@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [0.0.15](https://github.com/shuuul/bioviewer/compare/v0.0.14...v0.0.15) (2025-06-14)
+### [0.0.16](https://github.com/shuuul/bioviewer/compare/v0.0.15...v0.0.16) (2025-06-14)
 
-## [0.0.14](https://github.com/shuuul/bioviewer/compare/v0.0.13...v0.0.14) (2025-06-14)
+### 🔧 Bug Fixes
+
+- Downgraded `@types/vscode` to `^1.96.0` to match `engines.vscode` version `^1.96.2`.
+
+### ⚙️ Miscellaneous
+
+- Downgraded `engines.vscode` to `^1.96.2`.
+
+### [0.0.15](https://github.com/shuuul/bioviewer/compare/v0.0.14...v0.0.15) (2025-06-14)
 
 ### 🚀 Performance Improvements
 
@@ -12,14 +20,11 @@ All notable changes to this project will be documented in this file. See [standa
 - **Smart File Handling**: Added automatic file size detection with user warnings for files >50MB
 - **Blob URL Management**: Replaced data URLs with blob URLs for better memory efficiency and proper cleanup
 
-### 🔧 Bug Fixes
+### 🔧 Bug Fixes & Enhancements
 
 - **Webview Communication**: Fixed "Unknown command: undefined" errors by filtering invalid messages
 - **Volume Loading**: Fixed `loadVolumeFromData is not a function` error by using correct Mol* API methods
 - **File Access**: Resolved 401 download errors by reading file content directly in extension
-
-### 🏷️ Enhanced Features
-
 - **Volume Naming**: Volume/map files now display proper filename-based names instead of blob URLs
 - **File Size Display**: Added file size information in logs for better debugging
 - **Error Handling**: Improved error messages and user feedback for failed operations
