@@ -199,7 +199,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📊 Version History
 
-### v0.0.14 (Latest)
+### v0.0.16 (Latest)
+
+- 🔧 **Bug Fixes**: Downgraded `@types/vscode` to `^1.96.0` to match `engines.vscode` version `^1.96.2`.
+- ⚙️ **Miscellaneous**: Downgraded `engines.vscode` to `^1.96.2`.
+- 📜 **Packaging**: Included LICENSE file in the VSIX package.
+
+### v0.0.15
+
 - 🚀 **Major Performance Improvements**: Optimized memory usage for large files
 - 🛡️ **Smart File Handling**: Automatic warnings for large files (>50MB) with user confirmation
 - 🔧 **Memory Management**: Chunked processing for large binary files to prevent browser freezing
@@ -209,6 +216,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📊 **Improved Logging**: Reduced verbose output while maintaining debugging capabilities
 
 ### v0.0.13
+
 - ✨ Updated to Mol* v4.18.0
 - 🔧 Modernized dependencies (TypeScript 5.8.3, esbuild 0.25.5)
 - 🎨 Improved command names for better clarity
@@ -216,6 +224,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🚀 Better VS Code integration and performance
 
 ### Previous Versions
+
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
 ## 🆘 Support

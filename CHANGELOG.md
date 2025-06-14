@@ -2,7 +2,9 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [0.0.16](https://github.com/shuuul/bioviewer/compare/v0.0.15...v0.0.16) (2025-06-14)
+## [Unreleased]
+
+### [0.0.16](https://github.com/shuuul/bioviewer/compare/v0.0.15...v0.0.16) (2025-06-15)
 
 ### 🔧 Bug Fixes
 
@@ -11,6 +13,10 @@ All notable changes to this project will be documented in this file. See [standa
 ### ⚙️ Miscellaneous
 
 - Downgraded `engines.vscode` to `^1.96.2`.
+
+### 📜 Packaging
+
+- Included LICENSE file in the VSIX package.
 
 ### [0.0.15](https://github.com/shuuul/bioviewer/compare/v0.0.14...v0.0.15) (2025-06-14)
 
