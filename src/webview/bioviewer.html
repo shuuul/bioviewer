@@ -189,18 +189,55 @@
                             
                         case 'loadStructure':
                             console.log(`Loading structure from data: ${message.label}`);
-                            viewer.loadStructureFromData(message.data, message.format, message.isBinary)
-                                .then((result) => {
-                                    console.log(`Structure ${message.label} loaded successfully`);
-                                    console.log('Load result:', result);
+                            console.log(`Data size: ${message.data.length} chars, isBinary: ${message.isBinary}`);
+                            
+                            try {
+                                // Create a Blob from the data for memory efficiency
+                                let blob;
+                                if (message.isBinary) {
+                                    // Convert base64 to binary in chunks to avoid memory issues
+                                    console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes`);
                                     
+                                    const binaryString = atob(message.data);
+                                    const chunkSize = 1024 * 1024; // 1MB chunks
+                                    const chunks = [];
                                     
-                                    sendMessage('info', { info: `Loaded structure: ${message.label}` });
-                                })
-                                .catch(error => {
-                                    console.error('Error loading structure:', error);
-                                    sendMessage('error', { error: `Failed to load structure ${message.label}: ${error.message}` });
-                                });
+                                    for (let i = 0; i < binaryString.length; i += chunkSize) {
+                                        const chunk = binaryString.slice(i, i + chunkSize);
+                                        const bytes = new Uint8Array(chunk.length);
+                                        for (let j = 0; j < chunk.length; j++) {
+                                            bytes[j] = chunk.charCodeAt(j);
+                                        }
+                                        chunks.push(bytes);
+                                    }
+                                    
+                                    blob = new Blob(chunks, { type: 'text/plain' });
+                                    console.log(`Created blob from ${chunks.length} chunks`);
+                                } else {
+                                    blob = new Blob([message.data], { type: 'text/plain' });
+                                }
+                                
+                                const blobUrl = URL.createObjectURL(blob);
+                                console.log(`Created blob URL for structure: ${blobUrl}`);
+                                
+                                // Use loadStructureFromUrl with blob URL
+                                viewer.loadStructureFromUrl(blobUrl, message.format, false, { label: message.label })
+                                    .then((result) => {
+                                        console.log(`Structure ${message.label} loaded successfully`);
+                                        console.log('Load result:', result);
+                                        
+                                        URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                        sendMessage('info', { info: `Loaded structure: ${message.label}` });
+                                    })
+                                    .catch(error => {
+                                        console.error('Error loading structure from URL:', error);
+                                        URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                        sendMessage('error', { error: `Failed to load structure ${message.label}: ${error.message}` });
+                                    });
+                            } catch (error) {
+                                console.error('Error creating blob for structure:', error);
+                                sendMessage('error', { error: `Failed to create blob for structure ${message.label}: ${error.message}` });
+                            }
                             break;
                             
                         case 'loadVolume':

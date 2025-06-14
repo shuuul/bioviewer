@@ -247,18 +247,12 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
       }
     }
     
-    // Read file content and convert to base64 for binary files or text for text files
+    // Read file content and convert all files to base64 for blob handling
     const fileContent = await vscode.workspace.fs.readFile(fileUri);
-    const isBinary = format === 'ccp4';
+    const isBinary = true; // Treat all files as binary for blob URL handling
     
-    let data: string;
-    if (isBinary) {
-      // Convert binary content to base64
-      data = Buffer.from(fileContent).toString('base64');
-    } else {
-      // Convert text content to string
-      data = Buffer.from(fileContent).toString('utf8');
-    }
+    // Convert all file content to base64 for consistent blob handling
+    const data = Buffer.from(fileContent).toString('base64');
     
     const loadParams = {
       data,
