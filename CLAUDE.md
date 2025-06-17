@@ -29,6 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Registers 4 main commands: openFromDatabase, openFiles, openFolder, addFiles
 - Manages file loading logic with memory optimization for large files (>50MB warning)
 - Handles file format detection: structures (.pdb, .cif, .mmcif, .ent) and volumes (.mrc, .map, .ccp4)
+- Supports compressed files (.gz) with browser-side decompression for bandwidth efficiency
 - Implements chunked reading for binary files to prevent memory issues
 
 **Webview Panel Management (`src/panels/BioViewerPanel.ts`)**
@@ -55,6 +56,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Structure Files**: Read as UTF-8 text, passed directly to Mol* with filename-based labeling
 **Volume/Map Files**: Read as binary, converted to base64, processed in 1MB chunks to prevent browser freezing
+**Compressed Files (.gz)**: Automatically detected and decompressed in browser for bandwidth efficiency
 **Database Loading**: Direct API calls to PDB, AlphaFold, and EMDB through Mol* viewer methods
 
 ### Memory Management Strategy
@@ -62,6 +64,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - File size detection with user warnings for files >50MB
 - Chunked processing for large binary files (1MB chunks)
 - Blob URL usage instead of data URLs for better memory efficiency
+- Browser-side gzip decompression for minimal network transfer (ideal for remote SSH scenarios)
 - Automatic cleanup of blob URLs after successful loading
 - Truncated logging to prevent console spam with large file content
 

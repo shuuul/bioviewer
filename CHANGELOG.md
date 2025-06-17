@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file. See [standa
 
 ## [Unreleased]
 
+## [0.1.0](https://github.com/shuuul/bioviewer/compare/v0.0.16...v0.1.0) (2025-06-17)
+
+### 🚀 New Features
+
+- **Compressed File Support**: Added automatic .gz file detection and browser-side decompression
+- **Volume Naming Fix**: MRC/MAP volumes now display correct filename instead of blob URL prefix
+- **Remote SSH Optimization**: Compressed files transfer efficiently over network connections
+
+### 🔧 Technical Improvements
+
+- **Browser-side Decompression**: Uses native `DecompressionStream` API for optimal performance
+- **Bandwidth Efficiency**: Compressed files stay compressed during transfer to save network bandwidth
+- **Volume Management**: Enhanced volume loading with proper format detection and renaming logic
+
 ### [0.0.16](https://github.com/shuuul/bioviewer/compare/v0.0.15...v0.0.16) (2025-06-15)
 
 ### 🔧 Bug Fixes

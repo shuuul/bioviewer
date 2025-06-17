@@ -138,7 +138,7 @@ async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, 
  */
 async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
   // Find all supported file types in the folder
-  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4}`;
+  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -212,9 +212,22 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri) 
  */
 async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<void> {
   const fileName = path.basename(fileUri.fsPath);
-  const fileExtension = path.extname(fileUri.fsPath).toLowerCase();
+  const originalFilename = fileName; // Keep original filename for compression detection
+  let fileExtension = path.extname(fileUri.fsPath).toLowerCase();
   
-  outputChannel.appendLine(`Processing file: ${fileName}`);
+  // Detect if file is compressed
+  const isCompressed = fileExtension === '.gz';
+  
+  // Handle double extensions like .mrc.gz
+  if (fileExtension === '.gz') {
+    const baseName = path.basename(fileUri.fsPath, '.gz');
+    const innerExtension = path.extname(baseName).toLowerCase();
+    if (innerExtension) {
+      fileExtension = innerExtension + '.gz';
+    }
+  }
+  
+  outputChannel.appendLine(`Processing file: ${fileName} (compressed: ${isCompressed})`);
   
   // Determine format and command based on file extension
   const fileConfig = getFileConfig(fileExtension);
@@ -247,22 +260,31 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
       }
     }
     
-    // Read file content and convert all files to base64 for blob handling
+    // Read file content (keep compressed for efficient transfer)
     const fileContent = await vscode.workspace.fs.readFile(fileUri);
     const isBinary = true; // Treat all files as binary for blob URL handling
     
-    // Convert all file content to base64 for consistent blob handling
+    // Convert file content to base64 for consistent blob handling (keep compressed)
     const data = Buffer.from(fileContent).toString('base64');
+    
+    // Create clean label without extensions
+    let label = path.basename(fileUri.fsPath, path.extname(fileUri.fsPath));
+    if (isCompressed) {
+      // Remove .gz from label but keep the base format extension
+      label = path.basename(label, path.extname(label));
+    }
     
     const loadParams = {
       data,
       format,
       isBinary,
-      label: path.basename(fileUri.fsPath, path.extname(fileUri.fsPath)),
+      isCompressed, // Pass actual compression status for webview handling
+      originalFilename, // Pass original filename for Mol* compression detection
+      label,
       fileSize: fileSizeBytes
     };
 
-    outputChannel.appendLine(`Loading with command: ${command}, format: ${format}`);
+    outputChannel.appendLine(`Loading with command: ${command}, format: ${format}, compressed: ${isCompressed}`);
     
     panel.loadContent(command, loadParams);
     outputChannel.appendLine(`Successfully queued loading of: ${fileName}`);
@@ -279,15 +301,21 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
  * @returns File configuration object or null if unsupported
  */
 function getFileConfig(extension: string): { format: string; command: string } | null {
+  // Handle compressed files by stripping .gz extension
+  let actualExtension = extension;
+  if (extension.endsWith('.gz')) {
+    actualExtension = extension.slice(0, -3);
+  }
+  
   // Structure file formats
-  if (['.pdb', '.ent'].includes(extension)) {
+  if (['.pdb', '.ent'].includes(actualExtension)) {
     return { format: 'pdb', command: 'loadStructure' };
   }
-  if (['.cif', '.mmcif', '.mcif'].includes(extension)) {
+  if (['.cif', '.mmcif', '.mcif'].includes(actualExtension)) {
     return { format: 'mmcif', command: 'loadStructure' };
   }
   // Volume/density map formats
-  if (['.map', '.mrc', '.ccp4'].includes(extension)) {
+  if (['.map', '.mrc', '.ccp4'].includes(actualExtension)) {
     return { format: 'ccp4', command: 'loadVolume' };
   }
   
@@ -306,9 +334,9 @@ async function selectFiles(): Promise<vscode.Uri[]> {
     openLabel: 'Open in BioViewer',
     title: 'Select Biological Structure Files',
     filters: {
-      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4'],
-      'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent'],
-      'Volume/Density Maps': ['map', 'mrc', 'ccp4']
+      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz', 'map.gz', 'mrc.gz', 'ccp4.gz'],
+      'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz'],
+      'Volume/Density Maps': ['map', 'mrc', 'ccp4', 'map.gz', 'mrc.gz', 'ccp4.gz']
     }
   };
   

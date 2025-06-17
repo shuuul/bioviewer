@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.0.16",
+  "version": "0.1.0",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -60,7 +60,7 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc)$/i",
+          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)(\\.gz)?$/i",
           "command": "bioviewer.openFiles",
           "group": "navigation"
         },
@@ -70,7 +70,7 @@
           "group": "navigation"
         },
         {
-          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)$/",
+          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)(\\.gz)?$/i",
           "command": "bioviewer.addFiles",
           "group": "navigation"
         }

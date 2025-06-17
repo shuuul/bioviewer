@@ -129,6 +129,30 @@
                 });
                 
                 /**
+                 * Decompress gzip data using browser's native compression API
+                 * @param {Uint8Array} compressedData - The compressed data
+                 * @returns {Promise<Uint8Array>} Promise resolving to decompressed data
+                 */
+                async function decompressGzip(compressedData) {
+                    try {
+                        const stream = new ReadableStream({
+                            start(controller) {
+                                controller.enqueue(compressedData);
+                                controller.close();
+                            }
+                        });
+                        
+                        const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+                        const response = new Response(decompressedStream);
+                        const decompressedArrayBuffer = await response.arrayBuffer();
+                        return new Uint8Array(decompressedArrayBuffer);
+                    } catch (error) {
+                        console.error('Gzip decompression failed:', error);
+                        throw new Error(`Failed to decompress gzip data: ${error.message}`);
+                    }
+                }
+
+                /**
                  * Handle commands from the extension
                  * @param {object} viewer - The Mol* viewer instance
                  * @param {object} message - The message from the extension
@@ -189,12 +213,13 @@
                             
                         case 'loadStructure':
                             console.log(`Loading structure from data: ${message.label}`);
+                            (async () => {
                             try {
                                 // Create a Blob from the data for memory efficiency
                                 let blob;
                                 if (message.isBinary) {
                                     // Convert base64 to binary in chunks to avoid memory issues
-                                    console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes`);
+                                    console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes, compressed: ${message.isCompressed}`);
                                     
                                     const binaryString = atob(message.data);
                                     const chunkSize = 1024 * 1024; // 1MB chunks
@@ -209,8 +234,22 @@
                                         chunks.push(bytes);
                                     }
                                     
-                                    blob = new Blob(chunks, { type: 'text/plain' });
-                                    console.log(`Created blob from ${chunks.length} chunks`);
+                                    let finalData = new Uint8Array(binaryString.length);
+                                    let offset = 0;
+                                    for (const chunk of chunks) {
+                                        finalData.set(chunk, offset);
+                                        offset += chunk.length;
+                                    }
+                                    
+                                    // Decompress if needed
+                                    if (message.isCompressed) {
+                                        console.log(`Decompressing structure data for ${message.label}`);
+                                        finalData = await decompressGzip(finalData);
+                                        console.log(`Decompressed from ${binaryString.length} to ${finalData.length} bytes`);
+                                    }
+                                    
+                                    blob = new Blob([finalData], { type: 'text/plain' });
+                                    console.log(`Created blob from processed data`);
                                 } else {
                                     blob = new Blob([message.data], { type: 'text/plain' });
                                 }
@@ -236,11 +275,12 @@
                                 console.error('Error creating blob for structure:', error);
                                 sendMessage('error', { error: `Failed to create blob for structure ${message.label}: ${error.message}` });
                             }
+                            })();
                             break;
                             
                         case 'loadVolume':
                             console.log(`Loading volume/density map: ${message.label}`);
-                            
+                            (async () => {
                             // Try to find the correct volume loading method
                             if (viewer.loadVolumeFromUrl) {
                                 try {
@@ -248,7 +288,7 @@
                                     let blob;
                                     if (message.isBinary) {
                                         // Convert base64 to binary in chunks to avoid memory issues
-                                        console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes`);
+                                        console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes, compressed: ${message.isCompressed}`);
                                         
                                         const binaryString = atob(message.data);
                                         const chunkSize = 1024 * 1024; // 1MB chunks
@@ -263,8 +303,22 @@
                                             chunks.push(bytes);
                                         }
                                         
-                                        blob = new Blob(chunks, { type: 'application/octet-stream' });
-                                        console.log(`Created blob from ${chunks.length} chunks`);
+                                        let finalData = new Uint8Array(binaryString.length);
+                                        let offset = 0;
+                                        for (const chunk of chunks) {
+                                            finalData.set(chunk, offset);
+                                            offset += chunk.length;
+                                        }
+                                        
+                                        // Decompress if needed
+                                        if (message.isCompressed) {
+                                            console.log(`Decompressing volume data for ${message.label}`);
+                                            finalData = await decompressGzip(finalData);
+                                            console.log(`Decompressed from ${binaryString.length} to ${finalData.length} bytes`);
+                                        }
+                                        
+                                        blob = new Blob([finalData], { type: 'application/octet-stream' });
+                                        console.log(`Created blob from processed data`);
                                     } else {
                                         blob = new Blob([message.data], { type: 'text/plain' });
                                     }
@@ -327,6 +381,7 @@
                             } else {
                                 sendMessage('error', { error: `Volume loading not supported in this Mol* version` });
                             }
+                            })();
                             break;
                             
                         default:

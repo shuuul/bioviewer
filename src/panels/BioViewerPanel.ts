@@ -31,6 +31,9 @@ export class BioViewerPanel {
   
   /** Flag indicating if content is currently loading */
   private _isLoading: boolean = false;
+  
+  /** Flag indicating if the panel has been disposed */
+  private _isDisposed: boolean = false;
 
   /**
    * Static logging method for testing and debugging
@@ -71,7 +74,8 @@ export class BioViewerPanel {
     
     // Set up panel disposal handling
     this._panel.onDidDispose(() => {
-      BioViewerPanel._outputChannel.appendLine(`[Dispose] Panel ${panel.title} is being disposed`);
+      BioViewerPanel._outputChannel.appendLine(`[Dispose] Panel is being disposed`);
+      this._isDisposed = true;
       this.dispose();
     }, null, this._disposables);
     
@@ -85,8 +89,17 @@ export class BioViewerPanel {
     this._setupMessageHandling();
 
     // Generate and set the webview HTML content
-    this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
-    BioViewerPanel._outputChannel.appendLine(`[Constructor] Panel initialization completed in ${Date.now() - startTime}ms`);
+    try {
+      if (!this._isDisposed) {
+        this._panel.webview.html = this._getWebviewContent(this._panel.webview, extensionUri);
+        BioViewerPanel._outputChannel.appendLine(`[Constructor] Panel initialization completed in ${Date.now() - startTime}ms`);
+      } else {
+        BioViewerPanel._outputChannel.appendLine(`[Constructor] Warning: Panel was disposed during initialization`);
+      }
+    } catch (error) {
+      BioViewerPanel._outputChannel.appendLine(`[Constructor] Error setting webview content: ${error}`);
+      throw error;
+    }
   }
 
   /**
@@ -117,6 +130,10 @@ export class BioViewerPanel {
             
           case 'info':
             BioViewerPanel._outputChannel.appendLine(`[Message] Info from webview: ${message.info}`);
+            break;
+            
+          case 'debug':
+            BioViewerPanel._outputChannel.appendLine(`[Debug] ${message.message}`);
             break;
             
           default:
@@ -234,22 +251,37 @@ export class BioViewerPanel {
    * Disposes of the panel and cleans up resources
    */
   public dispose(): void {
-    BioViewerPanel._outputChannel.appendLine(`[Dispose] Disposing BioViewerPanel: ${this._panel.title}`);
+    if (this._isDisposed) {
+      return; // Already disposed, avoid double disposal
+    }
+    
+    BioViewerPanel._outputChannel.appendLine(`[Dispose] Disposing BioViewerPanel`);
+    this._isDisposed = true;
     
     // Clear the current panel reference if this is the current panel
     if (BioViewerPanel.currentPanel === this) {
       BioViewerPanel.currentPanel = undefined;
     }
     
-    // Dispose of the panel
-    this._panel.dispose();
-    
-    // Clean up all disposables
+    // Clean up all disposables first (to avoid circular disposal)
     while (this._disposables.length) {
       const disposable = this._disposables.pop();
       if (disposable) {
-        disposable.dispose();
+        try {
+          disposable.dispose();
+        } catch (error) {
+          BioViewerPanel._outputChannel.appendLine(`[Dispose] Error disposing resource: ${error}`);
+        }
       }
+    }
+    
+    // Dispose of the panel only if we haven't already tried
+    try {
+      if (this._panel) {
+        this._panel.dispose();
+      }
+    } catch (error) {
+      BioViewerPanel._outputChannel.appendLine(`[Dispose] Error disposing panel: ${error}`);
     }
     
     BioViewerPanel._outputChannel.appendLine(`[Dispose] Cleanup completed`);
