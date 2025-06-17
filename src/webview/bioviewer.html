@@ -113,7 +113,7 @@
                 preferWebgl1: preferWebgl1,
             }).then(viewer => {
                 console.log('Mol* viewer created successfully');
-                console.log('Available viewer methods:', Object.keys(viewer));
+                
                 // Set up message handling from the extension
                 window.addEventListener('message', event => {
                     const message = event.data;
@@ -189,8 +189,6 @@
                             
                         case 'loadStructure':
                             console.log(`Loading structure from data: ${message.label}`);
-                            console.log(`Data size: ${message.data.length} chars, isBinary: ${message.isBinary}`);
-                            
                             try {
                                 // Create a Blob from the data for memory efficiency
                                 let blob;
@@ -220,7 +218,7 @@
                                 const blobUrl = URL.createObjectURL(blob);
                                 console.log(`Created blob URL for structure: ${blobUrl}`);
                                 
-                                // Use loadStructureFromUrl with blob URL
+                                // Use loadStructureFromUrl for files
                                 viewer.loadStructureFromUrl(blobUrl, message.format, false, { label: message.label })
                                     .then((result) => {
                                         console.log(`Structure ${message.label} loaded successfully`);
@@ -242,8 +240,6 @@
                             
                         case 'loadVolume':
                             console.log(`Loading volume/density map: ${message.label}`);
-                            console.log(`Data size: ${message.data.length} chars, isBinary: ${message.isBinary}`);
-                            console.log(`Available volume methods:`, Object.keys(viewer).filter(k => k.toLowerCase().includes('volume')));
                             
                             // Try to find the correct volume loading method
                             if (viewer.loadVolumeFromUrl) {
@@ -284,7 +280,7 @@
                                         entryId: message.label
                                     }];
                                     
-                                    // Try different parameter formats for naming
+                                    // Use the working approach: pass volumeParams object with all needed info
                                     const volumeParams = { 
                                         url: blobUrl, 
                                         format: message.format, 
@@ -353,6 +349,7 @@
                     // Execute the code in a controlled context
                     return new Function('viewer', 'console', 'sendMessage', code)(viewer, console, sendMessage);
                 }
+                
                 // Notify extension that the viewer is ready
                 console.log('BioViewer initialization complete, notifying extension...');
                 sendMessage('ready');
