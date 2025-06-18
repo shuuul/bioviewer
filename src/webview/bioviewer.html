@@ -85,6 +85,10 @@
             // Acquire the VS Code API
             const vscode = acquireVsCodeApi();
             
+            // Loading queue to prevent race conditions with multiple file loads
+            let loadingQueue = [];
+            let isProcessingQueue = false;
+            
             /**
              * Send a message to the extension
              * @param {string} command - The command type
@@ -92,6 +96,37 @@
              */
             function sendMessage(command, data = {}) {
                 vscode.postMessage({ command, ...data });
+            }
+            
+            /**
+             * Add a loading task to the queue
+             * @param {function} task - The async task to execute
+             */
+            function queueLoadingTask(task) {
+                loadingQueue.push(task);
+                processLoadingQueue();
+            }
+            
+            /**
+             * Process the loading queue sequentially
+             */
+            async function processLoadingQueue() {
+                if (isProcessingQueue || loadingQueue.length === 0) {
+                    return;
+                }
+                
+                isProcessingQueue = true;
+                
+                while (loadingQueue.length > 0) {
+                    const task = loadingQueue.shift();
+                    try {
+                        await task();
+                    } catch (error) {
+                        console.error('Error processing loading task:', error);
+                    }
+                }
+                
+                isProcessingQueue = false;
             }
 
             console.log('Initializing BioViewer with Mol* viewer...');
@@ -212,8 +247,9 @@
                             break;
                             
                         case 'loadStructure':
+                            console.log(`Queuing structure loading: ${message.label}`);
+                            queueLoadingTask(async () => {
                             console.log(`Loading structure from data: ${message.label}`);
-                            (async () => {
                             try {
                                 // Create a Blob from the data for memory efficiency
                                 let blob;
@@ -257,30 +293,31 @@
                                 const blobUrl = URL.createObjectURL(blob);
                                 console.log(`Created blob URL for structure: ${blobUrl}`);
                                 
-                                // Use loadStructureFromUrl for files
-                                viewer.loadStructureFromUrl(blobUrl, message.format, false, { label: message.label })
-                                    .then((result) => {
-                                        console.log(`Structure ${message.label} loaded successfully`);
-                                        console.log('Load result:', result);
-                                        
-                                        URL.revokeObjectURL(blobUrl); // Clean up blob URL
-                                        sendMessage('info', { info: `Loaded structure: ${message.label}` });
-                                    })
-                                    .catch(error => {
-                                        console.error('Error loading structure from URL:', error);
-                                        URL.revokeObjectURL(blobUrl); // Clean up blob URL
-                                        sendMessage('error', { error: `Failed to load structure ${message.label}: ${error.message}` });
-                                    });
+                                // Use loadStructureFromUrl for files with comprehensive parameters
+                                const structureParams = {
+                                    label: message.label,
+                                    name: message.label,
+                                    id: message.label
+                                };
+                                
+                                // Wait for the structure to load completely before continuing
+                                await viewer.loadStructureFromUrl(blobUrl, message.format, false, structureParams);
+                                console.log(`Structure ${message.label} loaded successfully`);
+                                
+                                URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                sendMessage('info', { info: `Loaded structure: ${message.label}` });
+                                
                             } catch (error) {
-                                console.error('Error creating blob for structure:', error);
-                                sendMessage('error', { error: `Failed to create blob for structure ${message.label}: ${error.message}` });
+                                console.error('Error loading structure:', error);
+                                sendMessage('error', { error: `Failed to load structure ${message.label}: ${error.message}` });
                             }
-                            })();
+                            });
                             break;
                             
                         case 'loadVolume':
+                            console.log(`Queuing volume loading: ${message.label}`);
+                            queueLoadingTask(async () => {
                             console.log(`Loading volume/density map: ${message.label}`);
-                            (async () => {
                             // Try to find the correct volume loading method
                             if (viewer.loadVolumeFromUrl) {
                                 try {
@@ -344,44 +381,37 @@
                                         id: message.label
                                     };
                                     
-                                    viewer.loadVolumeFromUrl(volumeParams, isosurfaces)
-                                        .then((result) => {
-                                            console.log(`Volume ${message.label} loaded successfully`);
-                                            console.log('Volume load result:', result);
-                                            
-                                            // Try to rename the volume after loading
-                                            if (viewer.plugin && viewer.plugin.managers && viewer.plugin.managers.volume) {
-                                                try {
-                                                    const volumes = viewer.plugin.managers.volume.hierarchy.current.volumes;
-                                                    if (volumes && volumes.length > 0) {
-                                                        const lastVolume = volumes[volumes.length - 1];
-                                                        console.log('Attempting to rename volume:', lastVolume);
-                                                        // Try to update the label
-                                                        if (lastVolume.cell && lastVolume.cell.obj && lastVolume.cell.obj.label) {
-                                                            lastVolume.cell.obj.label = message.label;
-                                                        }
-                                                    }
-                                                } catch (renameError) {
-                                                    console.log('Could not rename volume:', renameError);
+                                    // Wait for the volume to load completely before continuing
+                                    await viewer.loadVolumeFromUrl(volumeParams, isosurfaces);
+                                    console.log(`Volume ${message.label} loaded successfully`);
+                                    
+                                    // Try to rename the volume after loading
+                                    if (viewer.plugin && viewer.plugin.managers && viewer.plugin.managers.volume) {
+                                        try {
+                                            const volumes = viewer.plugin.managers.volume.hierarchy.current.volumes;
+                                            if (volumes && volumes.length > 0) {
+                                                const lastVolume = volumes[volumes.length - 1];
+                                                console.log('Attempting to rename volume:', lastVolume);
+                                                // Try to update the label
+                                                if (lastVolume.cell && lastVolume.cell.obj && lastVolume.cell.obj.label) {
+                                                    lastVolume.cell.obj.label = message.label;
                                                 }
                                             }
-                                            
-                                            URL.revokeObjectURL(blobUrl); // Clean up blob URL
-                                            sendMessage('info', { info: `Loaded volume: ${message.label}` });
-                                        })
-                                        .catch(error => {
-                                            console.error('Error loading volume:', error);
-                                            URL.revokeObjectURL(blobUrl); // Clean up blob URL
-                                            sendMessage('error', { error: `Failed to load volume ${message.label}: ${error.message}` });
-                                        });
+                                        } catch (renameError) {
+                                            console.log('Could not rename volume:', renameError);
+                                        }
+                                    }
+                                    
+                                    URL.revokeObjectURL(blobUrl); // Clean up blob URL
+                                    sendMessage('info', { info: `Loaded volume: ${message.label}` });
                                 } catch (error) {
-                                    console.error('Error creating blob for volume:', error);
-                                    sendMessage('error', { error: `Failed to create blob for volume ${message.label}: ${error.message}` });
+                                    console.error('Error loading volume:', error);
+                                    sendMessage('error', { error: `Failed to load volume ${message.label}: ${error.message}` });
                                 }
                             } else {
                                 sendMessage('error', { error: `Volume loading not supported in this Mol* version` });
                             }
-                            })();
+                            });
                             break;
                             
                         default:

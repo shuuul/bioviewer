@@ -54,8 +54,8 @@ BioViewer is optimized for remote SSH scenarios:
 
 ## ⚙️ Requirements
 
-- Visual Studio Code ^1.96.2
-- Modern web browser (for WebGL support)
+- Visual Studio Code ^1.96.2 (for compatibility with [Cursor](https://www.cursor.com/))
+- Modern web browser (for WebGL support)]
 
 ## 🙏 Acknowledgments
 

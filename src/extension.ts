@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("bioviewer.openFromDatabase", () => openFromDatabase(context)),
     vscode.commands.registerCommand("bioviewer.openFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => openFiles(context, fileUri, selectedFiles)),
     vscode.commands.registerCommand("bioviewer.openFolder", (folderUri: vscode.Uri) => openFolder(context, folderUri)),
-    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri) => addFiles(context, fileUri))
+    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) => addFiles(context, fileUri, selectedFiles))
   ];
 
   context.subscriptions.push(...commands);
@@ -172,11 +172,17 @@ async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Ur
 /**
  * Adds files to the current BioViewer panel, or creates a new panel if none exists
  * @param context - The extension context
- * @param fileUri - Optional single file URI (when called from context menu)
+ * @param fileUri - The primary file URI (when called from context menu)
+ * @param selectedFiles - Array of selected files (when multiple files selected)
  */
-async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri) {
-  // Get files to add - either the provided file or prompt user to select
-  const filesToAdd = fileUri ? [fileUri] : await selectFiles();
+async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) {
+  // Use selected files if available, otherwise prompt user to select files
+  const filesToAdd = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
+  
+  outputChannel.appendLine(`[addFiles] Selected ${filesToAdd.length} files`);
+  if (filesToAdd.length > 0) {
+    outputChannel.appendLine(`[addFiles] Files: ${filesToAdd.map(f => path.basename(f.fsPath)).join(', ')}`);
+  }
   
   if (filesToAdd.length === 0) {
     outputChannel.appendLine('No files selected to add');
@@ -191,17 +197,25 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri) 
     // Wait for the new panel to be ready
     await panel.waitForReady();
     outputChannel.appendLine('New panel created and ready');
+  } else {
+    outputChannel.appendLine('Using existing panel');
   }
+
+  // Wait for the panel to be ready before loading files (important for existing panels too)
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready, adding files...');
 
   outputChannel.appendLine(`Adding ${filesToAdd.length} file(s) to current panel`);
   
   // Add all files to the current panel
-  for (const file of filesToAdd) {
-    outputChannel.appendLine(`Adding file: ${path.basename(file.fsPath)}`);
+  for (let i = 0; i < filesToAdd.length; i++) {
+    const file = filesToAdd[i];
+    outputChannel.appendLine(`[addFiles] Processing file ${i + 1}/${filesToAdd.length}: ${path.basename(file.fsPath)}`);
     await loadFile(panel, file);
+    outputChannel.appendLine(`[addFiles] Completed loading file ${i + 1}/${filesToAdd.length}: ${path.basename(file.fsPath)}`);
   }
   
-  outputChannel.appendLine(`Successfully added ${filesToAdd.length} file(s) to panel`);
+  outputChannel.appendLine(`[addFiles] Successfully added ${filesToAdd.length} file(s) to panel`);
 }
 
 /**
@@ -248,16 +262,9 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
     
     outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
     
-    // For very large files (>50MB), warn user and potentially skip
+    // Log large file sizes for monitoring
     if (fileSizeMB > 50) {
-      const proceed = await vscode.window.showWarningMessage(
-        `File ${fileName} is ${fileSizeMB.toFixed(2)} MB. Loading large files may cause performance issues. Continue?`,
-        'Yes', 'No'
-      );
-      if (proceed !== 'Yes') {
-        outputChannel.appendLine(`User cancelled loading of large file: ${fileName}`);
-        return;
-      }
+      outputChannel.appendLine(`Loading large file: ${fileName} (${fileSizeMB.toFixed(2)} MB)`);
     }
     
     // Read file content (keep compressed for efficient transfer)
