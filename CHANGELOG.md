@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [Unreleased]
+### [0.1.2](https://github.com/shuuul/bioviewer/compare/v0.1.0...v0.1.2) (2025-06-18)
+
+
+### Features
+
+* update extension functionality and documentation ([9d71bd5](https://github.com/shuuul/bioviewer/commit/9d71bd56866a0a87a6b1d3cbaef987bd9882092b))
 
 ## [0.1.0](https://github.com/shuuul/bioviewer/compare/v0.0.16...v0.1.0) (2025-06-17)
 
