@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Core Components
 
 **Extension Entry Point (`src/extension.ts`)**
-- Registers 4 main commands: openFromDatabase, openFiles, openFolder, addFiles
+- Registers 5 main commands: openFromDatabase, openFiles, openFolder, addFiles, addFolder
 - Manages file loading logic with memory optimization for large files (>50MB warning)
 - Handles file format detection: structures (.pdb, .cif, .mmcif, .ent) and volumes (.mrc, .map, .ccp4)
 - Supports compressed files (.gz) with browser-side decompression for bandwidth efficiency

@@ -17,7 +17,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("bioviewer.openFromDatabase", () => openFromDatabase(context)),
     vscode.commands.registerCommand("bioviewer.openFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => openFiles(context, fileUri, selectedFiles)),
     vscode.commands.registerCommand("bioviewer.openFolder", (folderUri: vscode.Uri) => openFolder(context, folderUri)),
-    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) => addFiles(context, fileUri, selectedFiles))
+    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) => addFiles(context, fileUri, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.addFolder", (folderUri: vscode.Uri) => addFolderToCurrentPanel(context, folderUri))
   ];
 
   context.subscriptions.push(...commands);
@@ -216,6 +217,57 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, 
   }
   
   outputChannel.appendLine(`[addFiles] Successfully added ${filesToAdd.length} file(s) to panel`);
+}
+
+/**
+ * Adds all supported files from a folder to the current BioViewer panel, or creates a new panel if none exists
+ * @param context - The extension context
+ * @param folderUri - The folder URI to scan for supported files
+ */
+async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
+  // Find all supported file types in the folder
+  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
+  const files = await vscode.workspace.findFiles(searchPattern);
+  
+  if (files.length === 0) {
+    vscode.window.showInformationMessage(
+      `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`
+    );
+    outputChannel.appendLine(`No supported files found in folder: ${folderUri.fsPath}`);
+    return;
+  }
+
+  const folderName = path.basename(folderUri.fsPath);
+  outputChannel.appendLine(`[addFolderToCurrentPanel] Found ${files.length} supported files in folder: ${folderName}`);
+  outputChannel.appendLine(`[addFolderToCurrentPanel] Files: ${files.map(f => path.basename(f.fsPath)).join(', ')}`);
+
+  // Get the current panel or create a new one if none exists
+  let panel = BioViewerPanel.getCurrentPanel();
+  if (!panel) {
+    outputChannel.appendLine('No active panel found, creating new panel');
+    panel = BioViewerPanel.create(context.extensionUri, "BioViewer", outputChannel);
+    // Wait for the new panel to be ready
+    await panel.waitForReady();
+    outputChannel.appendLine('New panel created and ready');
+  } else {
+    outputChannel.appendLine('Using existing panel');
+  }
+
+  // Wait for the panel to be ready before loading files (important for existing panels too)
+  await panel.waitForReady();
+  outputChannel.appendLine('Panel is ready, adding folder contents...');
+
+  outputChannel.appendLine(`Adding ${files.length} file(s) from folder: ${folderName} to current panel`);
+  
+  // Add all files from the folder to the current panel
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    outputChannel.appendLine(`[addFolderToCurrentPanel] Processing file ${i + 1}/${files.length}: ${path.basename(file.fsPath)}`);
+    await loadFile(panel, file);
+    outputChannel.appendLine(`[addFolderToCurrentPanel] Completed loading file ${i + 1}/${files.length}: ${path.basename(file.fsPath)}`);
+  }
+  
+  outputChannel.appendLine(`[addFolderToCurrentPanel] Successfully added ${files.length} file(s) from folder: ${folderName} to panel`);
 }
 
 /**

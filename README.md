@@ -31,6 +31,7 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 | `BioViewer: Open Files` | Open selected files in new panel |
 | `BioViewer: Open Folder` | Load all supported files from directory |
 | `BioViewer: Add Files to Current Panel` | Add files to active panel |
+| `BioViewer: Add Folder to Current Panel` | Add all supported files from directory to active panel |
 
 ### Supported Formats
 
