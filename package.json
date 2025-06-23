@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -55,6 +55,10 @@
       {
         "command": "bioviewer.addFiles",
         "title": "BioViewer: Add Files to Current Panel"
+      },
+      {
+        "command": "bioviewer.addFolder",
+        "title": "BioViewer: Add Folder to Current Panel"
       }
     ],
     "menus": {
@@ -72,6 +76,11 @@
         {
           "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)(\\.gz)?$/i",
           "command": "bioviewer.addFiles",
+          "group": "navigation"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "bioviewer.addFolder",
           "group": "navigation"
         }
       ]
