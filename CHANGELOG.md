@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.4](https://github.com/shuuul/bioviewer/compare/v0.1.3...v0.1.4) (2025-06-24)
+
+
+### Features
+
+* add 'Add Folder to Current Panel' command ([20c0dd3](https://github.com/shuuul/bioviewer/commit/20c0dd3561dff7eb77d3add5b126f67db3b54f26))
+
 ### [0.1.3](https://github.com/shuuul/bioviewer/compare/v0.1.2...v0.1.3) (2025-06-23)
 
 ### [0.1.2](https://github.com/shuuul/bioviewer/compare/v0.1.0...v0.1.2) (2025-06-18)
