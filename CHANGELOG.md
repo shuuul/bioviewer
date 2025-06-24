@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.1.4](https://github.com/shuuul/bioviewer/compare/v0.1.3...v0.1.4) (2025-06-24)
 
+### 🔧 Bug Fixes
+
+* **Folder Loading**: Fixed "No supported files in folder" error when adding folders with .cif files outside workspace
+  - Fixed search pattern construction in `addFolderToCurrentPanel` and `openFolder` functions
+  - Added fallback path resolution when `vscode.workspace.asRelativePath()` returns undefined
+  - Now correctly detects .cif, .pdb, .mrc and other supported files in folders outside the current workspace
 
 ### Features
 

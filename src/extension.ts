@@ -139,7 +139,8 @@ async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, 
  */
 async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
   // Find all supported file types in the folder
-  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
+  const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
+  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -226,7 +227,8 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, 
  */
 async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
   // Find all supported file types in the folder
-  const searchPattern = `${vscode.workspace.asRelativePath(folderUri)}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
+  const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
+  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
