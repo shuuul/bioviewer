@@ -32,7 +32,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Extension Entry Point (`src/extension.ts`)**
 - Registers 5 main commands: openFromDatabase, openFiles, openFolder, addFiles, addFolder
 - Manages file loading logic with memory optimization for large files (>50MB warning)
-- Handles file format detection: structures (.pdb, .cif, .mmcif, .ent) and volumes (.mrc, .map, .ccp4)
+- Handles file format detection: structures (.pdb, .cif, .mmcif, .ent), volumes (.mrc, .map, .ccp4), and small molecules (.sdf, .sd, .mol, .mol2, .pdbqt)
 - Supports compressed files (.gz) with browser-side decompression for bandwidth efficiency
 - Implements chunked reading for binary files to prevent memory issues
 

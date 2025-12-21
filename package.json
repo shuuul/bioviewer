@@ -33,6 +33,9 @@
     "structure",
     "visualization",
     "pdb",
+    "sdf",
+    "ligand",
+    "small molecule",
     "electron microscopy",
     "cryo-em"
   ],
@@ -64,7 +67,7 @@
     "menus": {
       "explorer/context": [
         {
-          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)(\\.gz)?$/i",
+          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\\.gz)?$/i",
           "command": "bioviewer.openFiles",
           "group": "navigation"
         },
@@ -74,7 +77,7 @@
           "group": "navigation"
         },
         {
-          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4)(\\.gz)?$/i",
+          "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\\.gz)?$/i",
           "command": "bioviewer.addFiles",
           "group": "navigation"
         },

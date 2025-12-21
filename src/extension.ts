@@ -140,7 +140,7 @@ async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, 
 async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
-  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
+  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -228,7 +228,7 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, 
 async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
-  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz}`;
+  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -379,7 +379,11 @@ function getFileConfig(extension: string): { format: string; command: string } |
   if (['.map', '.mrc', '.ccp4'].includes(actualExtension)) {
     return { format: 'ccp4', command: 'loadVolume' };
   }
-  
+  // Small molecule/ligand formats (SDF, MOL, MOL2, PDBQT)
+  if (['.sdf', '.sd', '.mol', '.mol2', '.pdbqt'].includes(actualExtension)) {
+    return { format: 'sdf', command: 'loadStructure' };
+  }
+
   return null;
 }
 
@@ -395,9 +399,10 @@ async function selectFiles(): Promise<vscode.Uri[]> {
     openLabel: 'Open in BioViewer',
     title: 'Select Biological Structure Files',
     filters: {
-      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz', 'map.gz', 'mrc.gz', 'ccp4.gz'],
+      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'sdf', 'sd', 'mol', 'mol2', 'pdbqt', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz', 'map.gz', 'mrc.gz', 'ccp4.gz', 'sdf.gz', 'sd.gz', 'mol.gz', 'mol2.gz', 'pdbqt.gz'],
       'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz'],
-      'Volume/Density Maps': ['map', 'mrc', 'ccp4', 'map.gz', 'mrc.gz', 'ccp4.gz']
+      'Volume/Density Maps': ['map', 'mrc', 'ccp4', 'map.gz', 'mrc.gz', 'ccp4.gz'],
+      'Small Molecules': ['sdf', 'sd', 'mol', 'mol2', 'pdbqt', 'sdf.gz', 'sd.gz', 'mol.gz', 'mol2.gz', 'pdbqt.gz']
     }
   };
   

@@ -39,6 +39,7 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 |------|------------|
 | **Structures** | `.pdb`, `.cif`, `.mmcif`, `.mcif`, `.ent` |
 | **Volume Maps** | `.mrc`, `.map`, `.ccp4` |
+| **Small Molecules** | `.sdf`, `.sd`, `.mol`, `.mol2`, `.pdbqt` |
 | **Compressed** | All above formats with `.gz` compression |
 
 ### Quick Start
