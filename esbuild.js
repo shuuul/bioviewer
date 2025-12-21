@@ -1,5 +1,5 @@
 const esbuild = require("esbuild");
-const fs = require("fs-extra");
+const fs = require("fs");
 const path = require("path");
 
 const production = process.argv.includes('--production');
@@ -31,8 +31,8 @@ const copyMolstarPlugin = {
 	  build.onEnd(() => {
 		const molstarSrcDir = path.join(__dirname, 'node_modules', 'molstar', 'build', 'viewer');
 		const molstarDestDir = path.join(__dirname, 'dist', 'molstar');
-		fs.ensureDirSync(molstarDestDir);
-		fs.copySync(molstarSrcDir, molstarDestDir);
+		fs.mkdirSync(molstarDestDir, { recursive: true });
+		fs.cpSync(molstarSrcDir, molstarDestDir, { recursive: true });
 		console.log('Copied Molstar module to dist/molstar/');
 	  });
 	},
@@ -44,8 +44,8 @@ const copyResourcesPlugin = {
 		build.onEnd(() => {
 			const resourcesSrcDir = path.join(__dirname, 'resources');
 			const resourcesDestDir = path.join(__dirname, 'dist', 'resources');
-			fs.ensureDirSync(resourcesDestDir);
-			fs.copySync(resourcesSrcDir, resourcesDestDir);
+			fs.mkdirSync(resourcesDestDir, { recursive: true });
+			fs.cpSync(resourcesSrcDir, resourcesDestDir, { recursive: true });
 			console.log('Copied resources to dist/resources/');
 		});
 	},
@@ -60,7 +60,7 @@ const copyHtmlPlugin = {
 		build.onEnd(() => {
 			const src = path.join(__dirname, 'src', 'webview', 'bioviewer.html');
 			const dest = path.join(__dirname, 'dist', 'webview', 'bioviewer.html');
-			fs.ensureDirSync(path.dirname(dest));
+			fs.mkdirSync(path.dirname(dest), { recursive: true });
 			fs.copyFileSync(src, dest);
 			console.log('Copied bioviewer.html to dist/webview/');
 		});
