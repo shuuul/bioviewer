@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "engines": {
-    "vscode": "^1.96.2",
+    "vscode": "^1.105.1",
     "node": ">=18.0.0"
   },
   "categories": [
@@ -88,7 +88,6 @@
   },
   "scripts": {
     "version": "standard-version",
-    "commit": "cz",
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
@@ -109,13 +108,11 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.96.0",
+    "@types/vscode": "^1.105.1",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
-    "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "^3.3.0",
     "esbuild": "^0.25.5",
     "eslint": "^9.29.0",
     "npm-run-all": "^4.1.5",
@@ -147,10 +144,5 @@
       "href": "https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer",
       "description": "VS Marketplace Installs"
     }
-  ],
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  }
+  ]
 }

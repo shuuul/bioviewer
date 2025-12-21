@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.5](https://github.com/shuuul/bioviewer/compare/v0.1.4...v0.1.5) (2025-12-21)
+
+
+### Bug Fixes
+
+* resolve folder loading issue for files outside workspace ([7cfcf3e](https://github.com/shuuul/bioviewer/commit/7cfcf3ec13660ef9b953331ff2bee31dc016d085))
+
 ### [0.1.4](https://github.com/shuuul/bioviewer/compare/v0.1.3...v0.1.4) (2025-06-24)
 
 ### 🔧 Bug Fixes
