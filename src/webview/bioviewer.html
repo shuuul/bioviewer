@@ -114,19 +114,30 @@
                 if (isProcessingQueue || loadingQueue.length === 0) {
                     return;
                 }
-                
+
                 isProcessingQueue = true;
-                
+
                 while (loadingQueue.length > 0) {
                     const task = loadingQueue.shift();
                     try {
                         await task();
                     } catch (error) {
                         console.error('Error processing loading task:', error);
+                        sendMessage('error', { error: `Failed to load: ${error.message}` });
                     }
                 }
-                
+
                 isProcessingQueue = false;
+            }
+
+            /**
+             * Converts base64 data to Uint8Array efficiently
+             * Uses Uint8Array.from() for faster performance than charCodeAt loop
+             * @param {string} base64Data - The base64 encoded data
+             * @returns {Uint8Array} Binary data
+             */
+            function base64ToUint8Array(base64Data) {
+                return Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
             }
 
             console.log('Initializing BioViewer with Mol* viewer...');
@@ -254,36 +265,18 @@
                                 // Create a Blob from the data for memory efficiency
                                 let blob;
                                 if (message.isBinary) {
-                                    // Convert base64 to binary in chunks to avoid memory issues
+                                    // Convert base64 to binary using optimized function
                                     console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes, compressed: ${message.isCompressed}`);
-                                    
-                                    const binaryString = atob(message.data);
-                                    const chunkSize = 1024 * 1024; // 1MB chunks
-                                    const chunks = [];
-                                    
-                                    for (let i = 0; i < binaryString.length; i += chunkSize) {
-                                        const chunk = binaryString.slice(i, i + chunkSize);
-                                        const bytes = new Uint8Array(chunk.length);
-                                        for (let j = 0; j < chunk.length; j++) {
-                                            bytes[j] = chunk.charCodeAt(j);
-                                        }
-                                        chunks.push(bytes);
-                                    }
-                                    
-                                    let finalData = new Uint8Array(binaryString.length);
-                                    let offset = 0;
-                                    for (const chunk of chunks) {
-                                        finalData.set(chunk, offset);
-                                        offset += chunk.length;
-                                    }
-                                    
+
+                                    let finalData = base64ToUint8Array(message.data);
+
                                     // Decompress if needed
                                     if (message.isCompressed) {
                                         console.log(`Decompressing structure data for ${message.label}`);
                                         finalData = await decompressGzip(finalData);
-                                        console.log(`Decompressed from ${binaryString.length} to ${finalData.length} bytes`);
+                                        console.log(`Decompressed to ${finalData.length} bytes`);
                                     }
-                                    
+
                                     blob = new Blob([finalData], { type: 'text/plain' });
                                     console.log(`Created blob from processed data`);
                                 } else {
@@ -324,36 +317,18 @@
                                     // Create a Blob instead of data URL for better memory efficiency
                                     let blob;
                                     if (message.isBinary) {
-                                        // Convert base64 to binary in chunks to avoid memory issues
+                                        // Convert base64 to binary using optimized function
                                         console.log(`Converting base64 to binary for ${message.label}, size: ${message.fileSize} bytes, compressed: ${message.isCompressed}`);
-                                        
-                                        const binaryString = atob(message.data);
-                                        const chunkSize = 1024 * 1024; // 1MB chunks
-                                        const chunks = [];
-                                        
-                                        for (let i = 0; i < binaryString.length; i += chunkSize) {
-                                            const chunk = binaryString.slice(i, i + chunkSize);
-                                            const bytes = new Uint8Array(chunk.length);
-                                            for (let j = 0; j < chunk.length; j++) {
-                                                bytes[j] = chunk.charCodeAt(j);
-                                            }
-                                            chunks.push(bytes);
-                                        }
-                                        
-                                        let finalData = new Uint8Array(binaryString.length);
-                                        let offset = 0;
-                                        for (const chunk of chunks) {
-                                            finalData.set(chunk, offset);
-                                            offset += chunk.length;
-                                        }
-                                        
+
+                                        let finalData = base64ToUint8Array(message.data);
+
                                         // Decompress if needed
                                         if (message.isCompressed) {
                                             console.log(`Decompressing volume data for ${message.label}`);
                                             finalData = await decompressGzip(finalData);
-                                            console.log(`Decompressed from ${binaryString.length} to ${finalData.length} bytes`);
+                                            console.log(`Decompressed to ${finalData.length} bytes`);
                                         }
-                                        
+
                                         blob = new Blob([finalData], { type: 'application/octet-stream' });
                                         console.log(`Created blob from processed data`);
                                     } else {

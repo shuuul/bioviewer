@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * BioViewerPanel manages the webview panel for displaying biological structures
@@ -10,30 +11,33 @@ import * as path from 'path';
 export class BioViewerPanel {
   /** The currently active BioViewer panel */
   public static currentPanel: BioViewerPanel | undefined;
-  
+
   /** The underlying VS Code webview panel */
   private readonly _panel: vscode.WebviewPanel;
-  
+
   /** Array of disposables to clean up when panel is disposed */
   private _disposables: vscode.Disposable[] = [];
-  
+
   /** Output channel for logging (shared across all instances) */
   private static _outputChannel: vscode.OutputChannel;
-  
+
   /** Promise that resolves when the webview is ready to receive messages */
   private _readyPromise: Promise<void>;
-  
+
   /** Resolver function for the ready promise */
   private _resolveReady: (() => void) | undefined;
-  
+
   /** Flag indicating if the webview is ready */
   private _isReady: boolean = false;
-  
+
   /** Flag indicating if content is currently loading */
   private _isLoading: boolean = false;
-  
+
   /** Flag indicating if the panel has been disposed */
   private _isDisposed: boolean = false;
+
+  /** Cached HTML template content (read once at module load) */
+  private static _cachedHtmlContent: string | null = null;
 
   /**
    * Static logging method for testing and debugging
@@ -296,14 +300,15 @@ export class BioViewerPanel {
   private _getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri): string {
     const startTime = Date.now();
     BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Generating webview content`);
-    
+
     try {
-      // Read the HTML template
-      const htmlPath = path.join(extensionUri.fsPath, 'dist', 'webview', 'bioviewer.html');
-      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Reading HTML template from: ${htmlPath}`);
-      
-      let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-      BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] HTML template loaded successfully`);
+      // Read and cache HTML template on first use
+      if (BioViewerPanel._cachedHtmlContent === null) {
+        const htmlPath = path.join(extensionUri.fsPath, 'dist', 'webview', 'bioviewer.html');
+        BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Reading HTML template from: ${htmlPath}`);
+        BioViewerPanel._cachedHtmlContent = fs.readFileSync(htmlPath, 'utf8');
+        BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] HTML template cached successfully`);
+      }
 
       // Generate URIs for resources
       const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
@@ -315,7 +320,7 @@ export class BioViewerPanel {
       BioViewerPanel._outputChannel.appendLine(`  JS: ${jsUri}`);
 
       // Replace placeholders with actual URIs and security nonce
-      htmlContent = htmlContent
+      const htmlContent = BioViewerPanel._cachedHtmlContent
         .replace(/\$\{cssUri\}/g, cssUri.toString())
         .replace(/\$\{jsUri\}/g, jsUri.toString())
         .replace(/\$\{nonce\}/g, nonce);
@@ -330,16 +335,11 @@ export class BioViewerPanel {
   }
 
   /**
-   * Generates a random nonce for Content Security Policy
+   * Generates a cryptographically secure nonce for Content Security Policy
    * @returns A random 32-character string
    */
   private _generateNonce(): string {
-    let text = '';
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 32; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    return text;
+    return crypto.randomBytes(16).toString('hex');
   }
 
   /**

@@ -5,7 +5,28 @@ import * as path from 'path';
 // Output channel for logging extension activities
 let outputChannel = vscode.window.createOutputChannel("BioViewer");
 
-type FileCommandArg = vscode.Uri | vscode.Uri[];
+// Supported file extensions for biological structures
+const SUPPORTED_EXTENSIONS = ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'sdf', 'sd', 'mol', 'mol2', 'pdbqt'] as const;
+type SupportedExtension = typeof SUPPORTED_EXTENSIONS[number];
+
+// Generate search pattern for folder operations
+function buildSearchPattern(relativePath: string): string {
+  const gzExtensions = SUPPORTED_EXTENSIONS.map(ext => `${ext}.gz`);
+  const allExtensions = [...SUPPORTED_EXTENSIONS, ...gzExtensions];
+  return `${relativePath}/*.{${allExtensions.join(',')}}`;
+}
+
+// Generate file dialog filters
+function buildFileFilters(): Record<string, string[]> {
+  return {
+    'All Supported Files': SUPPORTED_EXTENSIONS.flatMap(ext => [ext, `${ext}.gz`]),
+    'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent'].flatMap(ext => [ext, `${ext}.gz`]),
+    'Volume/Density Maps': ['map', 'mrc', 'ccp4'].flatMap(ext => [ext, `${ext}.gz`]),
+    'Small Molecules': ['sdf', 'sd', 'mol', 'mol2', 'pdbqt'].flatMap(ext => [ext, `${ext}.gz`])
+  };
+}
+
+type FileCommandArg = vscode.Uri | vscode.Uri[] | undefined;
 
 function resolveCommandFiles(fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]): vscode.Uri[] {
   if (Array.isArray(fileArg)) {
@@ -165,7 +186,7 @@ async function openFolder(context: vscode.ExtensionContext, folderUri?: vscode.U
 
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
-  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;
+  const searchPattern = buildSearchPattern(relativePath);
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -259,7 +280,7 @@ async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderU
 
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
-  const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;
+  const searchPattern = buildSearchPattern(relativePath);
   const files = await vscode.workspace.findFiles(searchPattern);
   
   if (files.length === 0) {
@@ -424,17 +445,12 @@ function getFileConfig(extension: string): { format: string; command: string } |
  */
 async function selectFiles(): Promise<vscode.Uri[]> {
   outputChannel.appendLine('Prompting user to select files');
-  
+
   const options: vscode.OpenDialogOptions = {
     canSelectMany: true,
     openLabel: 'Open in BioViewer',
     title: 'Select Biological Structure Files',
-    filters: {
-      'All Supported Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'sdf', 'sd', 'mol', 'mol2', 'pdbqt', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz', 'map.gz', 'mrc.gz', 'ccp4.gz', 'sdf.gz', 'sd.gz', 'mol.gz', 'mol2.gz', 'pdbqt.gz'],
-      'Structure Files': ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'pdb.gz', 'cif.gz', 'mmcif.gz', 'mcif.gz', 'ent.gz'],
-      'Volume/Density Maps': ['map', 'mrc', 'ccp4', 'map.gz', 'mrc.gz', 'ccp4.gz'],
-      'Small Molecules': ['sdf', 'sd', 'mol', 'mol2', 'pdbqt', 'sdf.gz', 'sd.gz', 'mol.gz', 'mol2.gz', 'pdbqt.gz']
-    }
+    filters: buildFileFilters()
   };
   
   const result = await vscode.window.showOpenDialog(options);
