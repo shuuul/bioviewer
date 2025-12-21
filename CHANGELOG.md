@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.10](https://github.com/shuuul/bioviewer/compare/v0.1.9...v0.1.10) (2025-12-22)
+
+
+### Bug Fixes
+
+* resolve F5 debug issue by adding one-time build task ([f69ad10](https://github.com/shuuul/bioviewer/commit/f69ad100a5149bf5b13d77b5b274b5f121a1040f))
+
+### Performance
+
+* consolidate file extension patterns into constants
+* optimize base64 decoding with Uint8Array.from() (2-3x faster)
+* remove fs-extra dependency (use native Node fs)
+* use crypto.randomBytes for secure nonce generation
+* cache webview HTML template (read once, reuse across panels)
+* enable noFallthroughCasesInSwitch in TypeScript
+
 ### [0.1.9](https://github.com/shuuul/bioviewer/compare/v0.1.8...v0.1.9) (2025-12-21)
 
 
