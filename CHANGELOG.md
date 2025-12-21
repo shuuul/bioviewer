@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.12](https://github.com/shuuul/bioviewer/compare/v0.1.11...v0.1.12) (2025-12-21)
+
+
+### Bug Fixes
+
+* replace fs-extra with native fs modules ([db8b45b](https://github.com/shuuul/bioviewer/commit/db8b45be2cfc6956f51ddf206108fa005e05fad5))
+
 ### [0.1.11](https://github.com/shuuul/bioviewer/compare/v0.1.10...v0.1.11) (2025-12-21)
 
 ### [0.1.10](https://github.com/shuuul/bioviewer/compare/v0.1.9...v0.1.10) (2025-12-22)
