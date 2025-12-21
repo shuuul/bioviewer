@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.6](https://github.com/shuuul/bioviewer/compare/v0.1.5...v0.1.6) (2025-12-21)
+
+
+### Features
+
+* add small molecule support (SDF, MOL, MOL2, PDBQT) ([42a1858](https://github.com/shuuul/bioviewer/commit/42a1858d7f2857714540295e13056fafb4958375))
+
 ### [0.1.5](https://github.com/shuuul/bioviewer/compare/v0.1.4...v0.1.5) (2025-12-21)
 
 
