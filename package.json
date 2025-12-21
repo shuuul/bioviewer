@@ -39,6 +39,16 @@
     "electron microscopy",
     "cryo-em"
   ],
+  "activationEvents": [
+    "onCommand:bioviewer.openFromDatabase",
+    "onCommand:bioviewer.openFiles",
+    "onCommand:bioviewer.openFolder",
+    "onCommand:bioviewer.addFiles",
+    "onCommand:bioviewer.addFolder",
+    "onCommand:bioviewer.activateFromFiles",
+    "onCommand:bioviewer.activateFromFolder",
+    "onCommand:bioviewer.appendFile"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
