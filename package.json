@@ -39,7 +39,6 @@
     "electron microscopy",
     "cryo-em"
   ],
-  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -62,10 +61,32 @@
       {
         "command": "bioviewer.addFolder",
         "title": "BioViewer: Add Folder to Current Panel"
+      },
+      {
+        "command": "bioviewer.activateFromFiles",
+        "title": "BioViewer: Activate From Files"
+      },
+      {
+        "command": "bioviewer.activateFromFolder",
+        "title": "BioViewer: Activate From Folder"
+      },
+      {
+        "command": "bioviewer.appendFile",
+        "title": "BioViewer: Append File to Current Panel"
       }
     ],
     "menus": {
       "explorer/context": [
+        {
+          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc)$/i",
+          "command": "bioviewer.activateFromFiles",
+          "group": "navigation"
+        },
+        {
+          "when": "explorerResourceIsFolder",
+          "command": "bioviewer.activateFromFolder",
+          "group": "navigation"
+        },
         {
           "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\\.gz)?$/i",
           "command": "bioviewer.openFiles",

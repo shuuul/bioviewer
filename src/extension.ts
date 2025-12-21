@@ -5,6 +5,32 @@ import * as path from 'path';
 // Output channel for logging extension activities
 let outputChannel = vscode.window.createOutputChannel("BioViewer");
 
+type FileCommandArg = vscode.Uri | vscode.Uri[];
+
+function resolveCommandFiles(fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]): vscode.Uri[] {
+  if (Array.isArray(fileArg)) {
+    return fileArg;
+  }
+
+  if (selectedFiles && selectedFiles.length > 0) {
+    return selectedFiles;
+  }
+
+  if (fileArg) {
+    return [fileArg];
+  }
+
+  return [];
+}
+
+function resolveSingleUri(uriArg?: vscode.Uri | vscode.Uri[]): vscode.Uri | undefined {
+  if (Array.isArray(uriArg)) {
+    return uriArg[0];
+  }
+
+  return uriArg;
+}
+
 /**
  * Activates the BioViewer extension and registers all commands
  * @param context - The extension context provided by VS Code
@@ -15,10 +41,13 @@ export function activate(context: vscode.ExtensionContext) {
   // Register all extension commands
   const commands = [
     vscode.commands.registerCommand("bioviewer.openFromDatabase", () => openFromDatabase(context)),
-    vscode.commands.registerCommand("bioviewer.openFiles", (fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) => openFiles(context, fileUri, selectedFiles)),
-    vscode.commands.registerCommand("bioviewer.openFolder", (folderUri: vscode.Uri) => openFolder(context, folderUri)),
-    vscode.commands.registerCommand("bioviewer.addFiles", (fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) => addFiles(context, fileUri, selectedFiles)),
-    vscode.commands.registerCommand("bioviewer.addFolder", (folderUri: vscode.Uri) => addFolderToCurrentPanel(context, folderUri))
+    vscode.commands.registerCommand("bioviewer.openFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => openFiles(context, fileArg, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.openFolder", (folderUri?: vscode.Uri) => openFolder(context, folderUri)),
+    vscode.commands.registerCommand("bioviewer.addFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => addFiles(context, fileArg, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.addFolder", (folderUri?: vscode.Uri) => addFolderToCurrentPanel(context, folderUri)),
+    vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => openFiles(context, fileArg, selectedFiles)),
+    vscode.commands.registerCommand("bioviewer.activateFromFolder", (folderUri?: vscode.Uri | vscode.Uri[]) => openFolder(context, resolveSingleUri(folderUri))),
+    vscode.commands.registerCommand("bioviewer.appendFile", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => addFiles(context, fileArg, selectedFiles))
   ];
 
   context.subscriptions.push(...commands);
@@ -96,12 +125,13 @@ function getDatabaseConfig(selection: string): { placeholder: string; command: s
 /**
  * Opens selected files in a new BioViewer panel
  * @param context - The extension context
- * @param fileUri - The primary file URI (when called from context menu)
+ * @param fileArg - The primary file URI or array of files (when called from context menu or tests)
  * @param selectedFiles - Array of selected files (when multiple files selected)
  */
-async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, selectedFiles: vscode.Uri[]) {
+async function openFiles(context: vscode.ExtensionContext, fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) {
+  const resolvedFiles = resolveCommandFiles(fileArg, selectedFiles);
   // Use selected files if available, otherwise prompt user to select files
-  const filesToOpen = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
+  const filesToOpen = resolvedFiles.length > 0 ? resolvedFiles : await selectFiles();
   
   if (filesToOpen.length === 0) {
     outputChannel.appendLine('No files selected to open');
@@ -137,7 +167,12 @@ async function openFiles(context: vscode.ExtensionContext, fileUri: vscode.Uri, 
  * @param context - The extension context
  * @param folderUri - The folder URI to scan for supported files
  */
-async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
+async function openFolder(context: vscode.ExtensionContext, folderUri?: vscode.Uri) {
+  if (!folderUri) {
+    outputChannel.appendLine('No folder provided to open');
+    return;
+  }
+
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
   const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;
@@ -174,12 +209,13 @@ async function openFolder(context: vscode.ExtensionContext, folderUri: vscode.Ur
 /**
  * Adds files to the current BioViewer panel, or creates a new panel if none exists
  * @param context - The extension context
- * @param fileUri - The primary file URI (when called from context menu)
+ * @param fileArg - The primary file URI or array of files (when called from context menu or tests)
  * @param selectedFiles - Array of selected files (when multiple files selected)
  */
-async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, selectedFiles?: vscode.Uri[]) {
+async function addFiles(context: vscode.ExtensionContext, fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) {
+  const resolvedFiles = resolveCommandFiles(fileArg, selectedFiles);
   // Use selected files if available, otherwise prompt user to select files
-  const filesToAdd = selectedFiles && selectedFiles.length > 0 ? selectedFiles : await selectFiles();
+  const filesToAdd = resolvedFiles.length > 0 ? resolvedFiles : await selectFiles();
   
   outputChannel.appendLine(`[addFiles] Selected ${filesToAdd.length} files`);
   if (filesToAdd.length > 0) {
@@ -225,7 +261,12 @@ async function addFiles(context: vscode.ExtensionContext, fileUri?: vscode.Uri, 
  * @param context - The extension context
  * @param folderUri - The folder URI to scan for supported files
  */
-async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderUri: vscode.Uri) {
+async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderUri?: vscode.Uri) {
+  if (!folderUri) {
+    outputChannel.appendLine('No folder provided to append');
+    return;
+  }
+
   // Find all supported file types in the folder
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
   const searchPattern = `${relativePath}/*.{pdb,cif,mmcif,mcif,ent,map,mrc,ccp4,sdf,sd,mol,mol2,pdbqt,pdb.gz,cif.gz,mmcif.gz,mcif.gz,ent.gz,map.gz,mrc.gz,ccp4.gz,sdf.gz,sd.gz,mol.gz,mol2.gz,pdbqt.gz}`;

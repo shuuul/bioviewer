@@ -87,6 +87,31 @@ suite('BioViewer Example Files Test Suite', () => {
         }
     });
 
+    test('Should load SDF file', async function(this: Mocha.Context) {
+        this.timeout(timeout);
+        try {
+            BioViewerPanel.log('\n=== Starting SDF File Test ===');
+
+            if (BioViewerPanel.getCurrentPanel()) {
+                BioViewerPanel.getCurrentPanel()?.dispose();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            await ensureExtensionActivated();
+            await closeAllEditors();
+
+            const sdfFile = vscode.Uri.file(path.join(examplesPath, 'ADP_ideal.sdf'));
+            assert.ok(fs.existsSync(sdfFile.fsPath), 'SDF file should exist');
+
+            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [sdfFile]);
+            assert.ok(true, 'Command should execute without error');
+
+        } catch (error) {
+            BioViewerPanel.log(`Test failed with error: ${error}`);
+            throw error;
+        }
+    });
+
     test('Should load multiple files in same viewer', async function(this: Mocha.Context) {
         this.timeout(timeout * 2);
         try {
