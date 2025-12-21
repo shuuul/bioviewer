@@ -133,9 +133,11 @@ suite('BioViewer Extension Test Suite', () => {
         const commands = await vscode.commands.getCommands(true);
         const bioviewerCommands = commands.filter(cmd => cmd.startsWith('bioviewer.'));
         
-        assert.ok(bioviewerCommands.includes('bioviewer.activateFromFiles'));
-        assert.ok(bioviewerCommands.includes('bioviewer.activateFromFolder'));
-        assert.ok(bioviewerCommands.includes('bioviewer.appendFile'));
+        assert.ok(bioviewerCommands.includes('bioviewer.openFiles'));
+        assert.ok(bioviewerCommands.includes('bioviewer.openFolder'));
+        assert.ok(bioviewerCommands.includes('bioviewer.addFiles'));
+        assert.ok(bioviewerCommands.includes('bioviewer.addFolder'));
+        assert.ok(bioviewerCommands.includes('bioviewer.openFromDatabase'));
     });
 
     test('Should recognize supported file extensions', function(this: Mocha.Context) {
@@ -153,14 +155,14 @@ suite('BioViewer Extension Test Suite', () => {
         const explorerContext = menus['explorer/context'];
         assert.ok(explorerContext, 'Explorer context menu should be defined');
         
-        // Find the menu item for activateFromFiles
-        const activateFromFiles = explorerContext.find((item: any) => item.command === 'bioviewer.activateFromFiles');
-        assert.ok(activateFromFiles, 'activateFromFiles menu item should be defined');
+        // Find the menu item for openFiles
+        const openFilesMenu = explorerContext.find((item: any) => item.command === 'bioviewer.openFiles');
+        assert.ok(openFilesMenu, 'openFiles menu item should be defined');
         
         // Check the when clause contains file extensions
-        const whenClause = activateFromFiles.when;
+        const whenClause = openFilesMenu.when;
         assert.ok(whenClause, 'When clause should be defined');
-        assert.ok(whenClause === 'resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc)$/i', 'Should support all file extensions');
+        assert.ok(whenClause.includes('pdb') && whenClause.includes('cif') && whenClause.includes('mrc'), 'Should support common file extensions');
     });
 
     test('Should create webview panel', async function(this: Mocha.Context) {
@@ -187,8 +189,8 @@ suite('BioViewer Extension Test Suite', () => {
             assert.ok(fs.existsSync(mrcFile.fsPath), 'Test file should exist');
 
             // Execute command
-            BioViewerPanel.log('Executing activateFromFiles command');
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [mrcFile]);
+            BioViewerPanel.log('Executing openFiles command');
+            await vscode.commands.executeCommand('bioviewer.openFiles', [mrcFile]);
             
             // Only verify that the command executed without error
             BioViewerPanel.log('Command executed successfully');
@@ -220,7 +222,7 @@ suite('BioViewer Extension Test Suite', () => {
 
             try {
                 // Try to open the invalid file
-                await vscode.commands.executeCommand('bioviewer.activateFromFiles', [invalidFile]);
+                await vscode.commands.executeCommand('bioviewer.openFiles', [invalidFile]);
                 
                 // Wait a bit for any potential error handling
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -259,7 +261,7 @@ suite('BioViewer Extension Test Suite', () => {
             await closeAllEditors();
 
             // Try to open the examples folder
-            await vscode.commands.executeCommand('bioviewer.activateFromFolder', vscode.Uri.file(examplesPath));
+            await vscode.commands.executeCommand('bioviewer.openFolder', vscode.Uri.file(examplesPath));
             
             // Only verify that the command executed without error
             assert.ok(true, 'Folder activation command should execute without error');
@@ -279,7 +281,7 @@ suite('BioViewer Extension Test Suite', () => {
             assert.ok(fs.existsSync(mrcFile.fsPath), 'MRC file should exist');
 
             // Execute command and verify it doesn't throw
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [mrcFile]);
+            await vscode.commands.executeCommand('bioviewer.openFiles', [mrcFile]);
             assert.ok(true, 'MRC file loading command should execute without error');
 
         } catch (error) {

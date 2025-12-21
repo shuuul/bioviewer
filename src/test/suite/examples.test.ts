@@ -49,8 +49,8 @@ suite('BioViewer Example Files Test Suite', () => {
             assert.ok(fs.existsSync(mrcFile.fsPath), 'MRC file should exist');
 
             // Execute command
-            BioViewerPanel.log('Executing activateFromFiles command');
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [mrcFile]);
+            BioViewerPanel.log('Executing openFiles command');
+            await vscode.commands.executeCommand('bioviewer.openFiles', [mrcFile]);
             
             // Only verify command execution
             BioViewerPanel.log('Command executed successfully');
@@ -78,7 +78,7 @@ suite('BioViewer Example Files Test Suite', () => {
             const cifFile = vscode.Uri.file(path.join(examplesPath, '6GIQ_ba1.cif'));
             assert.ok(fs.existsSync(cifFile.fsPath), 'CIF file should exist');
 
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [cifFile]);
+            await vscode.commands.executeCommand('bioviewer.openFiles', [cifFile]);
             assert.ok(true, 'Command should execute without error');
 
         } catch (error) {
@@ -103,7 +103,7 @@ suite('BioViewer Example Files Test Suite', () => {
             const sdfFile = vscode.Uri.file(path.join(examplesPath, 'ADP_ideal.sdf'));
             assert.ok(fs.existsSync(sdfFile.fsPath), 'SDF file should exist');
 
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', [sdfFile]);
+            await vscode.commands.executeCommand('bioviewer.openFiles', [sdfFile]);
             assert.ok(true, 'Command should execute without error');
 
         } catch (error) {
@@ -134,7 +134,7 @@ suite('BioViewer Example Files Test Suite', () => {
                 assert.ok(fs.existsSync(file.fsPath), `File ${file.fsPath} should exist`);
             });
 
-            await vscode.commands.executeCommand('bioviewer.activateFromFiles', files);
+            await vscode.commands.executeCommand('bioviewer.openFiles', files);
             assert.ok(true, 'Command should execute without error');
 
         } catch (error) {
@@ -156,7 +156,7 @@ suite('BioViewer Example Files Test Suite', () => {
             await ensureExtensionActivated();
             await closeAllEditors();
 
-            await vscode.commands.executeCommand('bioviewer.activateFromFolder', vscode.Uri.file(examplesPath));
+            await vscode.commands.executeCommand('bioviewer.openFolder', vscode.Uri.file(examplesPath));
             assert.ok(true, 'Command should execute without error');
 
         } catch (error) {

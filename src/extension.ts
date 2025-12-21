@@ -23,13 +23,6 @@ function resolveCommandFiles(fileArg?: FileCommandArg, selectedFiles?: vscode.Ur
   return [];
 }
 
-function resolveSingleUri(uriArg?: vscode.Uri | vscode.Uri[]): vscode.Uri | undefined {
-  if (Array.isArray(uriArg)) {
-    return uriArg[0];
-  }
-
-  return uriArg;
-}
 
 /**
  * Activates the BioViewer extension and registers all commands
@@ -44,10 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("bioviewer.openFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => openFiles(context, fileArg, selectedFiles)),
     vscode.commands.registerCommand("bioviewer.openFolder", (folderUri?: vscode.Uri) => openFolder(context, folderUri)),
     vscode.commands.registerCommand("bioviewer.addFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => addFiles(context, fileArg, selectedFiles)),
-    vscode.commands.registerCommand("bioviewer.addFolder", (folderUri?: vscode.Uri) => addFolderToCurrentPanel(context, folderUri)),
-    vscode.commands.registerCommand("bioviewer.activateFromFiles", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => openFiles(context, fileArg, selectedFiles)),
-    vscode.commands.registerCommand("bioviewer.activateFromFolder", (folderUri?: vscode.Uri | vscode.Uri[]) => openFolder(context, resolveSingleUri(folderUri))),
-    vscode.commands.registerCommand("bioviewer.appendFile", (fileArg?: FileCommandArg, selectedFiles?: vscode.Uri[]) => addFiles(context, fileArg, selectedFiles))
+    vscode.commands.registerCommand("bioviewer.addFolder", (folderUri?: vscode.Uri) => addFolderToCurrentPanel(context, folderUri))
   ];
 
   context.subscriptions.push(...commands);

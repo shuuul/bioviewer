@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -44,10 +44,7 @@
     "onCommand:bioviewer.openFiles",
     "onCommand:bioviewer.openFolder",
     "onCommand:bioviewer.addFiles",
-    "onCommand:bioviewer.addFolder",
-    "onCommand:bioviewer.activateFromFiles",
-    "onCommand:bioviewer.activateFromFolder",
-    "onCommand:bioviewer.appendFile"
+    "onCommand:bioviewer.addFolder"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -71,32 +68,10 @@
       {
         "command": "bioviewer.addFolder",
         "title": "BioViewer: Add Folder to Current Panel"
-      },
-      {
-        "command": "bioviewer.activateFromFiles",
-        "title": "BioViewer: Activate From Files"
-      },
-      {
-        "command": "bioviewer.activateFromFolder",
-        "title": "BioViewer: Activate From Folder"
-      },
-      {
-        "command": "bioviewer.appendFile",
-        "title": "BioViewer: Append File to Current Panel"
       }
     ],
     "menus": {
       "explorer/context": [
-        {
-          "when": "resourceExtname =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc)$/i",
-          "command": "bioviewer.activateFromFiles",
-          "group": "navigation"
-        },
-        {
-          "when": "explorerResourceIsFolder",
-          "command": "bioviewer.activateFromFolder",
-          "group": "navigation"
-        },
         {
           "when": "resourcePath =~ /\\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\\.gz)?$/i",
           "command": "bioviewer.openFiles",

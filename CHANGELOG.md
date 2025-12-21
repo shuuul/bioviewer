@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.9](https://github.com/shuuul/bioviewer/compare/v0.1.8...v0.1.9) (2025-12-21)
+
+
+### Refactor
+
+* remove redundant legacy commands (activateFromFiles, activateFromFolder, appendFile)
+* consolidate to 5 main commands: openFromDatabase, openFiles, openFolder, addFiles, addFolder
+* clean up duplicate context menu entries
+
 ### [0.1.8](https://github.com/shuuul/bioviewer/compare/v0.1.7...v0.1.8) (2025-12-21)
 
 ### [0.1.7](https://github.com/shuuul/bioviewer/compare/v0.1.6...v0.1.7) (2025-12-21)
