@@ -19,7 +19,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Release Management
 - `npm run version` - Generate changelog and bump version using standard-version
-- `npm run commit` - Create conventional commits using commitizen
 
 ## Memory
 
