@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.7](https://github.com/shuuul/bioviewer/compare/v0.1.6...v0.1.7) (2025-12-21)
+
+
+### Features
+
+* add legacy commands and sdf test ([1f1eac5](https://github.com/shuuul/bioviewer/commit/1f1eac5591273e1c9acf308f712f7cd739c7231a))
+
 ### [0.1.6](https://github.com/shuuul/bioviewer/compare/v0.1.5...v0.1.6) (2025-12-21)
 
 
