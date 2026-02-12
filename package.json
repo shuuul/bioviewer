@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.1.12",
+  "version": "0.1.14",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -63,11 +63,11 @@
       },
       {
         "command": "bioviewer.addFiles",
-        "title": "BioViewer: Add Files to Current Panel"
+        "title": "BioViewer: Add Files to Current Tab"
       },
       {
         "command": "bioviewer.addFolder",
-        "title": "BioViewer: Add Folder to Current Panel"
+        "title": "BioViewer: Add Folder to Current Tab"
       }
     ],
     "menus": {
@@ -116,17 +116,17 @@
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "@types/vscode": "^1.105.1",
-    "@typescript-eslint/eslint-plugin": "^8.34.0",
-    "@typescript-eslint/parser": "^8.34.0",
-    "@vscode/test-cli": "^0.0.11",
+    "@types/node": "^20.19.33",
+    "@types/vscode": "1.105.0",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "@vscode/test-cli": "0.0.11",
     "@vscode/test-electron": "^2.5.2",
-    "esbuild": "^0.25.5",
-    "eslint": "^9.29.0",
+    "esbuild": "^0.25.12",
+    "eslint": "^9.39.2",
     "npm-run-all": "^4.1.5",
     "standard-version": "^9.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "molstar": "^4.18.0"
