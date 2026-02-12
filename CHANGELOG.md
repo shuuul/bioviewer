@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.18](https://github.com/shuuul/bioviewer/compare/v0.1.16...v0.1.18) (2026-02-12)
+
 ### [0.1.16](https://github.com/shuuul/bioviewer/compare/v0.1.14...v0.1.16) (2026-02-12)
 
 - refactor: migrate the webview runtime to a React + TypeScript architecture with typed extension/webview messaging
