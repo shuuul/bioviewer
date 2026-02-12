@@ -1,0 +1,28 @@
+exclude: '^test-resources/'
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\.gz)?$'
+      - id: end-of-file-fixer
+        exclude: '\.(pdb|cif|mmcif|mcif|ent|map|mrc|ccp4|sdf|sd|mol|mol2|pdbqt)(\.gz)?$'
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: check-types
+        name: TypeScript type check
+        entry: npm run check-types
+        language: system
+        pass_filenames: false
+        files: '^(src/.*\.(ts|tsx)|tsconfig\.json)$'
+      - id: lint
+        name: ESLint
+        entry: npm run lint
+        language: system
+        pass_filenames: false
+        files: '^(src/.*\.(ts|tsx)|eslint\.config\.mjs)$'

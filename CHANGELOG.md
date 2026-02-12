@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.1.16](https://github.com/shuuul/bioviewer/compare/v0.1.14...v0.1.16) (2026-02-12)
 
+- refactor: migrate the webview runtime to a React + TypeScript architecture with typed extension/webview messaging
+- refactor: remove outdated legacy webview/test scaffolding and simplify build/package outputs
+- test: optimize extension test speed and reliability with shared setup utilities and table-driven cases
+
 ### [0.1.14](https://github.com/shuuul/bioviewer/compare/v0.1.12...v0.1.14) (2026-02-12)
 
 ### [0.1.13](https://github.com/shuuul/bioviewer/compare/v0.1.12...v0.1.13) (2026-02-12)

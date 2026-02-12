@@ -1,167 +1,58 @@
-import * as vscode from 'vscode';
-import * as assert from 'assert';
-import * as path from 'path';
-import * as fs from 'fs';
-import { BioViewerPanel } from '../../panels/BioViewerPanel';
+import * as assert from "assert";
+import * as vscode from "vscode";
+import {
+    EXAMPLES_PATH,
+    ensureExtensionActivated,
+    fileExists,
+    getExampleUri,
+    resetUiState
+} from "./testUtils";
 
-suite('BioViewer Example Files Test Suite', () => {
-    const examplesPath = path.join(__dirname, '..', '..', '..', 'test-resources', 'examples');
-    const timeout = 30000;
+suite("BioViewer Example Files Test Suite", () => {
+    const timeout = 20000;
 
-    // Helper function to wait for extension activation
-    async function ensureExtensionActivated(): Promise<void> {
-        const ext = vscode.extensions.getExtension('shuuul.bioviewer');
-        if (ext) {
-            if (!ext.isActive) {
-                await ext.activate();
-            }
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-    }
-
-    // Helper function to close all editors
-    async function closeAllEditors(): Promise<void> {
-        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    test('Should load MRC file', async function(this: Mocha.Context) {
+    suiteSetup(async function(this: Mocha.Context) {
         this.timeout(timeout);
-        try {
-            BioViewerPanel.log('\n=== Starting MRC File Test ===');
-            
-            // Clean up any existing panels
-            let panel = BioViewerPanel.getCurrentPanel();
-            if (!panel) {
-                BioViewerPanel.log('No panel found, will retry...');
-            } else {
-                BioViewerPanel.log('Panel found, checking ready state');
-                BioViewerPanel.log(`Panel state - isReady: ${panel.isReady}, isLoading: ${panel.isLoading}`);
-                BioViewerPanel.log('Disposing existing panel');
-                panel.dispose();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
-            await ensureExtensionActivated();
-            await closeAllEditors();
-
-            const mrcFile = vscode.Uri.file(path.join(examplesPath, '0004_unified_apix2.mrc'));
-            assert.ok(fs.existsSync(mrcFile.fsPath), 'MRC file should exist');
-
-            // Execute command
-            BioViewerPanel.log('Executing openFiles command');
-            await vscode.commands.executeCommand('bioviewer.openFiles', [mrcFile]);
-            
-            // Only verify command execution
-            BioViewerPanel.log('Command executed successfully');
-            assert.ok(true, 'Command should execute without error');
-
-        } catch (error) {
-            BioViewerPanel.log(`Test failed with error: ${error}`);
-            throw error;
-        }
+        await ensureExtensionActivated();
+        await resetUiState();
     });
 
-    test('Should load CIF file', async function(this: Mocha.Context) {
+    teardown(async function(this: Mocha.Context) {
         this.timeout(timeout);
-        try {
-            BioViewerPanel.log('\n=== Starting CIF File Test ===');
-            
-            if (BioViewerPanel.getCurrentPanel()) {
-                BioViewerPanel.getCurrentPanel()?.dispose();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
-            await ensureExtensionActivated();
-            await closeAllEditors();
-
-            const cifFile = vscode.Uri.file(path.join(examplesPath, '6GIQ_ba1.cif'));
-            assert.ok(fs.existsSync(cifFile.fsPath), 'CIF file should exist');
-
-            await vscode.commands.executeCommand('bioviewer.openFiles', [cifFile]);
-            assert.ok(true, 'Command should execute without error');
-
-        } catch (error) {
-            BioViewerPanel.log(`Test failed with error: ${error}`);
-            throw error;
-        }
+        await resetUiState();
     });
 
-    test('Should load SDF file', async function(this: Mocha.Context) {
-        this.timeout(timeout);
-        try {
-            BioViewerPanel.log('\n=== Starting SDF File Test ===');
-
-            if (BioViewerPanel.getCurrentPanel()) {
-                BioViewerPanel.getCurrentPanel()?.dispose();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-
-            await ensureExtensionActivated();
-            await closeAllEditors();
-
-            const sdfFile = vscode.Uri.file(path.join(examplesPath, 'ADP_ideal.sdf'));
-            assert.ok(fs.existsSync(sdfFile.fsPath), 'SDF file should exist');
-
-            await vscode.commands.executeCommand('bioviewer.openFiles', [sdfFile]);
-            assert.ok(true, 'Command should execute without error');
-
-        } catch (error) {
-            BioViewerPanel.log(`Test failed with error: ${error}`);
-            throw error;
+    const openFilesCases: Array<{ name: string; files: string[]; timeoutMultiplier?: number }> = [
+        { name: "Should load MRC file", files: ["0004_unified_apix2.mrc"] },
+        { name: "Should load CIF file", files: ["6GIQ_ba1.cif"] },
+        { name: "Should load SDF file", files: ["ADP_ideal.sdf"] },
+        {
+            name: "Should load multiple files in same viewer",
+            files: ["0004_unified_apix2.mrc", "6GIQ_ba1.cif"],
+            timeoutMultiplier: 2
         }
-    });
+    ];
 
-    test('Should load multiple files in same viewer', async function(this: Mocha.Context) {
-        this.timeout(timeout * 2);
-        try {
-            BioViewerPanel.log('\n=== Starting Multiple Files Test ===');
-            
-            if (BioViewerPanel.getCurrentPanel()) {
-                BioViewerPanel.getCurrentPanel()?.dispose();
-                await new Promise(resolve => setTimeout(resolve, 1000));
+    for (const { name, files, timeoutMultiplier } of openFilesCases) {
+        test(name, async function(this: Mocha.Context) {
+            this.timeout(timeout * (timeoutMultiplier ?? 1));
+
+            const fileUris = files.map((filename) => getExampleUri(filename));
+            for (const fileUri of fileUris) {
+                assert.ok(fileExists(fileUri), `Example file should exist: ${fileUri.fsPath}`);
             }
 
-            await ensureExtensionActivated();
-            await closeAllEditors();
-
-            const files = [
-                vscode.Uri.file(path.join(examplesPath, '0004_unified_apix2.mrc')),
-                vscode.Uri.file(path.join(examplesPath, '6GIQ_ba1.cif'))
-            ];
-
-            files.forEach(file => {
-                assert.ok(fs.existsSync(file.fsPath), `File ${file.fsPath} should exist`);
+            await assert.doesNotReject(async () => {
+                await vscode.commands.executeCommand("bioviewer.openFiles", fileUris);
             });
+        });
+    }
 
-            await vscode.commands.executeCommand('bioviewer.openFiles', files);
-            assert.ok(true, 'Command should execute without error');
-
-        } catch (error) {
-            BioViewerPanel.log(`Test failed with error: ${error}`);
-            throw error;
-        }
-    });
-
-    test('Should load all supported files from folder', async function(this: Mocha.Context) {
+    test("Should load all supported files from folder", async function(this: Mocha.Context) {
         this.timeout(timeout * 2);
-        try {
-            BioViewerPanel.log('\n=== Starting Folder Loading Test ===');
-            
-            if (BioViewerPanel.getCurrentPanel()) {
-                BioViewerPanel.getCurrentPanel()?.dispose();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
 
-            await ensureExtensionActivated();
-            await closeAllEditors();
-
-            await vscode.commands.executeCommand('bioviewer.openFolder', vscode.Uri.file(examplesPath));
-            assert.ok(true, 'Command should execute without error');
-
-        } catch (error) {
-            BioViewerPanel.log(`Test failed with error: ${error}`);
-            throw error;
-        }
+        await assert.doesNotReject(async () => {
+            await vscode.commands.executeCommand("bioviewer.openFolder", vscode.Uri.file(EXAMPLES_PATH));
+        });
     });
 });

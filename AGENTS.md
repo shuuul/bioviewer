@@ -35,19 +35,18 @@ This file provides guidance to coding agents when working with code in this repo
 - Manages file loading logic with memory optimization for large files (>50MB warning)
 - Handles file format detection: structures (.pdb, .cif, .mmcif, .ent), volumes (.mrc, .map, .ccp4), and small molecules (.sdf, .sd, .mol, .mol2, .pdbqt)
 - Supports compressed files (.gz) with browser-side decompression for bandwidth efficiency
-- Implements chunked reading for binary files to prevent memory issues
 
 **Webview Panel Management (`src/panels/BioViewerPanel.ts`)**
 - Singleton pattern for managing Mol* viewer instances
 - Handles secure webview communication with message filtering
 - Implements ready-state management for reliable content loading
-- Manages resource URIs and security context (CSP, nonces)
+- Injects React/Mol* webview asset URIs and security context (CSP, nonces)
 
-**Mol* Integration (`src/webview/bioviewer.html`)**
-- Embeds Mol* viewer v4.18.0 for molecular visualization
+**React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/molstarController.ts`)**
+- React app mounts the webview UI and loading/error overlays
+- Mol* viewer v4.18.0 is initialized via a dedicated TypeScript controller
 - Handles multiple loading methods: database APIs, local file data, volume rendering
-- Implements blob URL management for efficient memory usage with large files
-- Provides command routing for structure/volume loading and error handling
+- Implements blob URL management and gzip decompression for efficient loading
 
 ### Data Flow Architecture
 
@@ -60,14 +59,13 @@ This file provides guidance to coding agents when working with code in this repo
 ### File Format Handling
 
 **Structure Files**: Read as UTF-8 text, passed directly to Mol* with filename-based labeling
-**Volume/Map Files**: Read as binary, converted to base64, processed in 1MB chunks to prevent browser freezing
+**Volume/Map Files**: Read as binary, converted to base64, then loaded via blob URLs in the webview
 **Compressed Files (.gz)**: Automatically detected and decompressed in browser for bandwidth efficiency
 **Database Loading**: Direct API calls to PDB, AlphaFold, and EMDB through Mol* viewer methods
 
 ### Memory Management Strategy
 
 - File size detection with user warnings for files >50MB
-- Chunked processing for large binary files (1MB chunks)
 - Blob URL usage instead of data URLs for better memory efficiency
 - Browser-side gzip decompression for minimal network transfer (ideal for remote SSH scenarios)
 - Automatic cleanup of blob URLs after successful loading
@@ -75,10 +73,10 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### Build System
 
-**esbuild Configuration**: 
-- Bundles TypeScript extension code into single `dist/extension.js`
+**esbuild Configuration**:
+- Bundles extension code into `dist/extension.js` and React webview code into `dist/webview/app.js` + `app.css`
 - Copies Mol* library files from node_modules to `dist/molstar/`
-- Copies webview HTML template and resources to appropriate dist/ subdirectories
+- Copies webview HTML template and resources to dist/
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:
@@ -103,7 +101,15 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### Extension Debugging
 
-- Set breakpoints in TypeScript source files (works with source maps)
-- Use F5 or "Run Extension" launch configuration for debugging
-- Monitor webview console through Developer Tools when webview is focused
-- Check VS Code Output panel "BioViewer" channel for extension logs
+- Use VS Code launch configuration `Run Extension` in `.vscode/launch.json` (it runs pre-launch task `build`).
+- Press `F5` (or Run and Debug -> `Run Extension`) to open an Extension Development Host window.
+- Reproduce issues in the Extension Development Host using BioViewer commands from the Command Palette or Explorer context menu.
+- Set breakpoints in TypeScript sources under `src/`; source maps map to `dist/**/*.js`.
+- Open `Developer: Toggle Developer Tools` in the Extension Development Host to inspect webview console/runtime errors.
+- Check the Output panel channel `BioViewer` for extension-side logs emitted by `outputChannel`.
+- For test debugging, use launch configuration `Extension Tests` (after `npm run compile-tests`).
+
+### Mol* References
+
+- Official Mol* documentation: [https://molstar.org/docs/](https://molstar.org/docs/)
+- For Mol* implementation questions, use the DeepWiki MCP server with `repoName: "molstar/molstar"` via `read_wiki_structure` and `ask_question`

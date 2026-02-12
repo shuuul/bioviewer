@@ -3,6 +3,7 @@
 [![Version](https://img.shields.io/visual-studio-marketplace/v/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Pre-commit: prek](https://img.shields.io/badge/pre--commit-prek-blue)](https://github.com/j178/prek)
 
 A powerful Visual Studio Code extension for visualizing biological structures and electron microscopy maps. Built on [Mol*](https://molstar.org/), BioViewer brings advanced molecular visualization directly into your development environment.
 
@@ -57,7 +58,7 @@ BioViewer is optimized for remote SSH scenarios:
 ## ⚙️ Requirements
 
 - Visual Studio Code ^1.105.1 (for compatibility with [Cursor](https://www.cursor.com/))
-- Modern web browser (for WebGL support)]
+- Modern web browser (for WebGL support)
 
 ## 🙏 Acknowledgments
 
@@ -75,9 +76,22 @@ This extension was inspired by [molstar/VSCoding-Sequence](https://github.com/mo
 git clone https://github.com/shuuul/bioviewer.git
 cd bioviewer
 npm install
+prek install      # Install git pre-commit hooks
 npm run watch    # Development mode
 npm run compile  # Production build
 ```
+
+BioViewer uses [prek](https://github.com/j178/prek) to run pre-commit checks (linting, type checks, and file hygiene hooks) before commits.
+
+## 🐞 Debugging in VS Code
+
+1. Open this repository in VS Code and run `npm install`.
+2. Start debugging with `F5` (or Run and Debug) using the `Run Extension` launch configuration.
+3. VS Code opens an Extension Development Host window; run BioViewer commands there to reproduce issues.
+4. Set breakpoints in `src/**/*.{ts,tsx}` (source maps map to `dist/**/*.js`).
+5. Check extension logs in Output panel -> `BioViewer`.
+6. For webview issues, run `Developer: Toggle Developer Tools` in the Extension Development Host and inspect console errors.
+7. To debug tests, run `npm run compile-tests` and launch `Extension Tests`.
 
 ## 📄 License
 

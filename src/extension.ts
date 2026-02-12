@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import { BioViewerPanel } from './panels/BioViewerPanel';
 import * as path from 'path';
+import type { DatabaseCommand, FileLoadCommand } from './shared/webviewProtocol';
 
 // Output channel for logging extension activities
-let outputChannel = vscode.window.createOutputChannel("BioViewer");
+const outputChannel = vscode.window.createOutputChannel("BioViewer");
 
 // Supported file extensions for biological structures
 const SUPPORTED_EXTENSIONS = ['pdb', 'cif', 'mmcif', 'mcif', 'ent', 'map', 'mrc', 'ccp4', 'sdf', 'sd', 'mol', 'mol2', 'pdbqt'] as const;
@@ -71,23 +72,23 @@ export function activate(context: vscode.ExtensionContext) {
  */
 async function openFromDatabase(context: vscode.ExtensionContext) {
   outputChannel.appendLine('Opening structure from database');
-  
+
   // Available database options
   const options = ['PDB', 'AlphaFoldDB (UniProt)', 'EMDB'];
-  const selection = await vscode.window.showQuickPick(options, { 
-    placeHolder: 'Select database type' 
+  const selection = await vscode.window.showQuickPick(options, {
+    placeHolder: 'Select database type'
   });
-  
+
   if (!selection) {
     outputChannel.appendLine('User cancelled database selection');
     return;
   }
 
   outputChannel.appendLine(`User selected: ${selection}`);
-  
+
   // Get appropriate placeholder text and command for selected database
   const { placeholder, command } = getDatabaseConfig(selection);
-  
+
   const accession = await vscode.window.showInputBox({
     placeHolder: placeholder,
     prompt: `Enter the ${selection} identifier`
@@ -99,18 +100,18 @@ async function openFromDatabase(context: vscode.ExtensionContext) {
   }
 
   outputChannel.appendLine(`User entered accession: ${accession}`);
-  
+
   // Create new panel and load structure
   const panel = BioViewerPanel.create(
-    context.extensionUri, 
-    `BioViewer - ${selection}: ${accession}`, 
+    context.extensionUri,
+    `BioViewer - ${selection}: ${accession}`,
     outputChannel
   );
 
   // Wait for the panel to be ready before loading structure
   await panel.waitForReady();
   outputChannel.appendLine('Panel is ready');
-  
+
   panel.loadContent(command, { accession: accession });
   outputChannel.appendLine(`Loading ${selection} structure: ${accession}`);
 }
@@ -120,7 +121,7 @@ async function openFromDatabase(context: vscode.ExtensionContext) {
  * @param selection - The selected database type
  * @returns Object containing placeholder text and command
  */
-function getDatabaseConfig(selection: string): { placeholder: string; command: string } {
+function getDatabaseConfig(selection: string): { placeholder: string; command: DatabaseCommand } {
   switch (selection) {
     case 'PDB':
       return { placeholder: 'Enter PDB ID (e.g. 6giq)', command: 'loadPdb' };
@@ -143,7 +144,7 @@ async function openFiles(context: vscode.ExtensionContext, fileArg?: FileCommand
   const resolvedFiles = resolveCommandFiles(fileArg, selectedFiles);
   // Use selected files if available, otherwise prompt user to select files
   const filesToOpen = resolvedFiles.length > 0 ? resolvedFiles : await selectFiles();
-  
+
   if (filesToOpen.length === 0) {
     outputChannel.appendLine('No files selected to open');
     return;
@@ -151,12 +152,12 @@ async function openFiles(context: vscode.ExtensionContext, fileArg?: FileCommand
 
   // Create descriptive panel title from file names
   const fileNames = filesToOpen.map(f => path.basename(f.fsPath));
-  const title = fileNames.length > 3 
+  const title = fileNames.length > 3
     ? `BioViewer - ${fileNames.slice(0, 2).join(', ')} and ${fileNames.length - 2} more`
     : `BioViewer - ${fileNames.join(', ')}`;
-    
+
   const panel = BioViewerPanel.create(context.extensionUri, title, outputChannel);
-  
+
   outputChannel.appendLine(`Created new panel for ${filesToOpen.length} file(s)`);
   outputChannel.appendLine(`Files: ${filesToOpen.map(f => f.fsPath).join(', ')}`);
 
@@ -169,7 +170,7 @@ async function openFiles(context: vscode.ExtensionContext, fileArg?: FileCommand
     outputChannel.appendLine(`Loading file: ${path.basename(file.fsPath)}`);
     await loadFile(panel, file);
   }
-  
+
   outputChannel.appendLine(`Successfully loaded ${filesToOpen.length} file(s)`);
 }
 
@@ -188,7 +189,7 @@ async function openFolder(context: vscode.ExtensionContext, folderUri?: vscode.U
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
   const searchPattern = buildSearchPattern(relativePath);
   const files = await vscode.workspace.findFiles(searchPattern);
-  
+
   if (files.length === 0) {
     vscode.window.showInformationMessage(
       `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`
@@ -200,7 +201,7 @@ async function openFolder(context: vscode.ExtensionContext, folderUri?: vscode.U
   const folderName = path.basename(folderUri.fsPath);
   const title = `BioViewer - ${folderName} (${files.length} files)`;
   const panel = BioViewerPanel.create(context.extensionUri, title, outputChannel);
-  
+
   outputChannel.appendLine(`Created panel for folder: ${folderName}`);
   outputChannel.appendLine(`Found ${files.length} supported files`);
 
@@ -213,7 +214,7 @@ async function openFolder(context: vscode.ExtensionContext, folderUri?: vscode.U
     outputChannel.appendLine(`Loading file from folder: ${path.basename(file.fsPath)}`);
     await loadFile(panel, file);
   }
-  
+
   outputChannel.appendLine(`Successfully loaded ${files.length} files from folder: ${folderName}`);
 }
 
@@ -227,12 +228,12 @@ async function addFiles(context: vscode.ExtensionContext, fileArg?: FileCommandA
   const resolvedFiles = resolveCommandFiles(fileArg, selectedFiles);
   // Use selected files if available, otherwise prompt user to select files
   const filesToAdd = resolvedFiles.length > 0 ? resolvedFiles : await selectFiles();
-  
+
   outputChannel.appendLine(`[addFiles] Selected ${filesToAdd.length} files`);
   if (filesToAdd.length > 0) {
     outputChannel.appendLine(`[addFiles] Files: ${filesToAdd.map(f => path.basename(f.fsPath)).join(', ')}`);
   }
-  
+
   if (filesToAdd.length === 0) {
     outputChannel.appendLine('No files selected to add');
     return;
@@ -255,7 +256,7 @@ async function addFiles(context: vscode.ExtensionContext, fileArg?: FileCommandA
   outputChannel.appendLine('Panel is ready, adding files...');
 
   outputChannel.appendLine(`Adding ${filesToAdd.length} file(s) to current panel`);
-  
+
   // Add all files to the current panel
   for (let i = 0; i < filesToAdd.length; i++) {
     const file = filesToAdd[i];
@@ -263,7 +264,7 @@ async function addFiles(context: vscode.ExtensionContext, fileArg?: FileCommandA
     await loadFile(panel, file);
     outputChannel.appendLine(`[addFiles] Completed loading file ${i + 1}/${filesToAdd.length}: ${path.basename(file.fsPath)}`);
   }
-  
+
   outputChannel.appendLine(`[addFiles] Successfully added ${filesToAdd.length} file(s) to panel`);
 }
 
@@ -282,7 +283,7 @@ async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderU
   const relativePath = vscode.workspace.asRelativePath(folderUri) || path.relative(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', folderUri.fsPath);
   const searchPattern = buildSearchPattern(relativePath);
   const files = await vscode.workspace.findFiles(searchPattern);
-  
+
   if (files.length === 0) {
     vscode.window.showInformationMessage(
       `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`
@@ -312,7 +313,7 @@ async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderU
   outputChannel.appendLine('Panel is ready, adding folder contents...');
 
   outputChannel.appendLine(`Adding ${files.length} file(s) from folder: ${folderName} to current panel`);
-  
+
   // Add all files from the folder to the current panel
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -320,7 +321,7 @@ async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderU
     await loadFile(panel, file);
     outputChannel.appendLine(`[addFolderToCurrentPanel] Completed loading file ${i + 1}/${files.length}: ${path.basename(file.fsPath)}`);
   }
-  
+
   outputChannel.appendLine(`[addFolderToCurrentPanel] Successfully added ${files.length} file(s) from folder: ${folderName} to panel`);
 }
 
@@ -332,12 +333,11 @@ async function addFolderToCurrentPanel(context: vscode.ExtensionContext, folderU
  */
 async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<void> {
   const fileName = path.basename(fileUri.fsPath);
-  const originalFilename = fileName; // Keep original filename for compression detection
   let fileExtension = path.extname(fileUri.fsPath).toLowerCase();
-  
+
   // Detect if file is compressed
   const isCompressed = fileExtension === '.gz';
-  
+
   // Handle double extensions like .mrc.gz
   if (fileExtension === '.gz') {
     const baseName = path.basename(fileUri.fsPath, '.gz');
@@ -346,9 +346,9 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
       fileExtension = innerExtension + '.gz';
     }
   }
-  
+
   outputChannel.appendLine(`Processing file: ${fileName} (compressed: ${isCompressed})`);
-  
+
   // Determine format and command based on file extension
   const fileConfig = getFileConfig(fileExtension);
   if (!fileConfig) {
@@ -359,46 +359,44 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
   }
 
   const { format, command } = fileConfig;
-  
+
   try {
     // Check file size first
     const fileStats = await vscode.workspace.fs.stat(fileUri);
     const fileSizeBytes = fileStats.size;
     const fileSizeMB = fileSizeBytes / (1024 * 1024);
-    
+
     outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
-    
+
     // Log large file sizes for monitoring
     if (fileSizeMB > 50) {
       outputChannel.appendLine(`Loading large file: ${fileName} (${fileSizeMB.toFixed(2)} MB)`);
     }
-    
+
     // Read file content (keep compressed for efficient transfer)
     const fileContent = await vscode.workspace.fs.readFile(fileUri);
     const isBinary = true; // Treat all files as binary for blob URL handling
-    
+
     // Convert file content to base64 for consistent blob handling (keep compressed)
     const data = Buffer.from(fileContent).toString('base64');
-    
+
     // Create clean label without extensions
     let label = path.basename(fileUri.fsPath, path.extname(fileUri.fsPath));
     if (isCompressed) {
       // Remove .gz from label but keep the base format extension
       label = path.basename(label, path.extname(label));
     }
-    
+
     const loadParams = {
       data,
       format,
       isBinary,
       isCompressed, // Pass actual compression status for webview handling
-      originalFilename, // Pass original filename for Mol* compression detection
-      label,
-      fileSize: fileSizeBytes
+      label
     };
 
     outputChannel.appendLine(`Loading with command: ${command}, format: ${format}, compressed: ${isCompressed}`);
-    
+
     panel.loadContent(command, loadParams);
     outputChannel.appendLine(`Successfully queued loading of: ${fileName}`);
   } catch (error) {
@@ -413,13 +411,13 @@ async function loadFile(panel: BioViewerPanel, fileUri: vscode.Uri): Promise<voi
  * @param extension - The file extension (with dot)
  * @returns File configuration object or null if unsupported
  */
-function getFileConfig(extension: string): { format: string; command: string } | null {
+function getFileConfig(extension: string): { format: string; command: FileLoadCommand } | null {
   // Handle compressed files by stripping .gz extension
   let actualExtension = extension;
   if (extension.endsWith('.gz')) {
     actualExtension = extension.slice(0, -3);
   }
-  
+
   // Structure file formats
   if (['.pdb', '.ent'].includes(actualExtension)) {
     return { format: 'pdb', command: 'loadStructure' };
@@ -452,15 +450,15 @@ async function selectFiles(): Promise<vscode.Uri[]> {
     title: 'Select Biological Structure Files',
     filters: buildFileFilters()
   };
-  
+
   const result = await vscode.window.showOpenDialog(options);
   const fileCount = result?.length || 0;
-  
+
   outputChannel.appendLine(`User selected ${fileCount} file(s)`);
   if (result && result.length > 0) {
     outputChannel.appendLine(`Selected files: ${result.map(uri => path.basename(uri.fsPath)).join(', ')}`);
   }
-  
+
   return result || [];
 }
 

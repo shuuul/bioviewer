@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import { isWebviewToExtensionMessage, type ExtensionCommand } from "../shared/webviewProtocol";
 
 /**
  * BioViewerPanel manages the webview panel for displaying biological structures
@@ -73,16 +74,16 @@ export class BioViewerPanel {
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     const startTime = Date.now();
     BioViewerPanel._outputChannel.appendLine(`[Constructor] Initializing BioViewerPanel: ${panel.title}`);
-    
+
     this._panel = panel;
-    
+
     // Set up panel disposal handling
     this._panel.onDidDispose(() => {
       BioViewerPanel._outputChannel.appendLine(`[Dispose] Panel is being disposed`);
       this._isDisposed = true;
       this.dispose();
     }, null, this._disposables);
-    
+
     // Initialize ready promise for synchronizing webview readiness
     this._readyPromise = new Promise((resolve) => {
       this._resolveReady = resolve;
@@ -111,37 +112,37 @@ export class BioViewerPanel {
    */
   private _setupMessageHandling(): void {
     this._panel.webview.onDidReceiveMessage(
-      message => {
-        BioViewerPanel._outputChannel.appendLine(`[Message] Received: ${JSON.stringify(message)}`);
-        
-        // Check if message has a command property
-        if (!message.command) {
-          BioViewerPanel._outputChannel.appendLine(`[Message] Warning: Message received without command property: ${JSON.stringify(message)}`);
+      (rawMessage: unknown) => {
+        BioViewerPanel._outputChannel.appendLine(`[Message] Received: ${JSON.stringify(rawMessage)}`);
+
+        if (!isWebviewToExtensionMessage(rawMessage)) {
+          BioViewerPanel._outputChannel.appendLine(
+            `[Message] Warning: Received unexpected webview payload: ${JSON.stringify(rawMessage)}`
+          );
           return;
         }
-        
-        switch (message.command) {
+
+        switch (rawMessage.command) {
           case 'ready':
             BioViewerPanel._outputChannel.appendLine(`[Message] Webview is ready`);
             this._handleReady();
             BioViewerPanel.currentPanel = this;
             break;
-            
+
           case 'error':
-            BioViewerPanel._outputChannel.appendLine(`[Message] Error from webview: ${message.error}`);
-            vscode.window.showErrorMessage(`BioViewer: ${message.error}`);
+            this._isLoading = false;
+            BioViewerPanel._outputChannel.appendLine(`[Message] Error from webview: ${rawMessage.error}`);
+            vscode.window.showErrorMessage(`BioViewer: ${rawMessage.error}`);
             break;
-            
+
           case 'info':
-            BioViewerPanel._outputChannel.appendLine(`[Message] Info from webview: ${message.info}`);
+            this._isLoading = false;
+            BioViewerPanel._outputChannel.appendLine(`[Message] Info from webview: ${rawMessage.info}`);
             break;
-            
+
           case 'debug':
-            BioViewerPanel._outputChannel.appendLine(`[Debug] ${message.message}`);
+            BioViewerPanel._outputChannel.appendLine(`[Debug] ${rawMessage.message}`);
             break;
-            
-          default:
-            BioViewerPanel._outputChannel.appendLine(`[Message] Unknown command: ${message.command}`);
         }
       },
       null,
@@ -156,7 +157,7 @@ export class BioViewerPanel {
   private _handleReady(): void {
     this._isReady = true;
     BioViewerPanel._outputChannel.appendLine('Webview is ready for content loading');
-    
+
     if (this._resolveReady) {
       this._resolveReady();
       this._resolveReady = undefined;
@@ -186,10 +187,10 @@ export class BioViewerPanel {
     BioViewerPanel._outputChannel = outputChannel;
     BioViewerPanel._outputChannel.appendLine(`[Create] Creating new BioViewerPanel`);
     BioViewerPanel._outputChannel.appendLine(`[Create] Title: ${title}`);
-    
+
     // Determine the column to place the panel
     const column = vscode.window.activeTextEditor?.viewColumn || vscode.ViewColumn.One;
-    
+
     BioViewerPanel._outputChannel.appendLine(`[Create] Using view column: ${column}`);
 
     // Create the webview panel with appropriate options
@@ -206,7 +207,7 @@ export class BioViewerPanel {
         ]
       }
     );
-    
+
     const instance = new BioViewerPanel(panel, extensionUri);
     BioViewerPanel._outputChannel.appendLine(`[Create] BioViewerPanel created in ${Date.now() - startTime}ms`);
     return instance;
@@ -225,19 +226,20 @@ export class BioViewerPanel {
    * @param command - The command to execute in the webview
    * @param params - Parameters for the command
    */
-  public loadContent(command: string, params: any): void {
+  public loadContent(command: ExtensionCommand, params: Record<string, unknown>): void {
     BioViewerPanel._outputChannel.appendLine(`[LoadContent] Command: ${command}`);
     // Log parameters without the data content to avoid spam
-    const logParams = { ...params };
-    if (logParams.data) {
-      logParams.data = `[${logParams.isBinary ? 'Binary' : 'Text'} content: ${logParams.data.length} chars]`;
+    const logParams: Record<string, unknown> = { ...params };
+    if (typeof logParams.data === "string") {
+      const contentType = logParams.isBinary === true ? 'Binary' : 'Text';
+      logParams.data = `[${contentType} content: ${logParams.data.length} chars]`;
     }
     BioViewerPanel._outputChannel.appendLine(`[LoadContent] Parameters: ${JSON.stringify(logParams, null, 2)}`);
-    
+
     if (!this._isReady) {
       BioViewerPanel._outputChannel.appendLine(`[LoadContent] Warning: Webview may not be ready yet`);
     }
-    
+
     try {
       this._isLoading = true;
       this._panel.webview.postMessage({ command, ...params });
@@ -258,15 +260,15 @@ export class BioViewerPanel {
     if (this._isDisposed) {
       return; // Already disposed, avoid double disposal
     }
-    
+
     BioViewerPanel._outputChannel.appendLine(`[Dispose] Disposing BioViewerPanel`);
     this._isDisposed = true;
-    
+
     // Clear the current panel reference if this is the current panel
     if (BioViewerPanel.currentPanel === this) {
       BioViewerPanel.currentPanel = undefined;
     }
-    
+
     // Clean up all disposables first (to avoid circular disposal)
     while (this._disposables.length) {
       const disposable = this._disposables.pop();
@@ -278,7 +280,7 @@ export class BioViewerPanel {
         }
       }
     }
-    
+
     // Dispose of the panel only if we haven't already tried
     try {
       if (this._panel) {
@@ -287,7 +289,7 @@ export class BioViewerPanel {
     } catch (error) {
       BioViewerPanel._outputChannel.appendLine(`[Dispose] Error disposing panel: ${error}`);
     }
-    
+
     BioViewerPanel._outputChannel.appendLine(`[Dispose] Cleanup completed`);
   }
 
@@ -311,18 +313,26 @@ export class BioViewerPanel {
       }
 
       // Generate URIs for resources
-      const cssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
-      const jsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.js'));
+      const molstarCssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.css'));
+      const molstarJsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'molstar', 'molstar.js'));
+      const appCssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'webview', 'app.css'));
+      const appJsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'dist', 'webview', 'app.js'));
+      const cspSource = webview.cspSource;
       const nonce = this._generateNonce();
 
       BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Resources prepared`);
-      BioViewerPanel._outputChannel.appendLine(`  CSS: ${cssUri}`);
-      BioViewerPanel._outputChannel.appendLine(`  JS: ${jsUri}`);
+      BioViewerPanel._outputChannel.appendLine(`  Molstar CSS: ${molstarCssUri}`);
+      BioViewerPanel._outputChannel.appendLine(`  Molstar JS: ${molstarJsUri}`);
+      BioViewerPanel._outputChannel.appendLine(`  App CSS: ${appCssUri}`);
+      BioViewerPanel._outputChannel.appendLine(`  App JS: ${appJsUri}`);
 
       // Replace placeholders with actual URIs and security nonce
       const htmlContent = BioViewerPanel._cachedHtmlContent
-        .replace(/\$\{cssUri\}/g, cssUri.toString())
-        .replace(/\$\{jsUri\}/g, jsUri.toString())
+        .replace(/\$\{molstarCssUri\}/g, molstarCssUri.toString())
+        .replace(/\$\{molstarJsUri\}/g, molstarJsUri.toString())
+        .replace(/\$\{appCssUri\}/g, appCssUri.toString())
+        .replace(/\$\{appJsUri\}/g, appJsUri.toString())
+        .replace(/\$\{cspSource\}/g, cspSource)
         .replace(/\$\{nonce\}/g, nonce);
 
       BioViewerPanel._outputChannel.appendLine(`[GetWebviewContent] Content generated in ${Date.now() - startTime}ms`);
@@ -340,14 +350,5 @@ export class BioViewerPanel {
    */
   private _generateNonce(): string {
     return crypto.randomBytes(16).toString('hex');
-  }
-
-  /**
-   * Converts a file URI to a webview URI for loading resources
-   * @param uri - The file URI to convert
-   * @returns The webview URI
-   */
-  public getWebviewUri(uri: vscode.Uri): vscode.Uri {
-    return this._panel.webview.asWebviewUri(uri);
   }
 }
