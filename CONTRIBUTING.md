@@ -1,45 +1,38 @@
 # Contributing to BioViewer
 
-We love your input! We want to make contributing to BioViewer as easy and transparent as possible, whether it's:
+We welcome contributions and aim to keep the process simple and predictable.
 
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
-- Becoming a maintainer
+## What to Contribute
 
-## Development Process
+- Bug reports and fixes
+- Feature proposals and implementations
+- Test improvements
+- Documentation updates
 
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+## Development Workflow
 
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Issue that pull request!
+1. Fork the repository and branch from `master`.
+2. Implement your change.
+3. Add or update tests when behavior changes.
+4. Update documentation for API/UX/workflow changes.
+5. Run validation locally:
+   - `npm run compile`
+   - `npm run test`
+6. Open a pull request with a clear summary.
 
 ## Pull Request Process
 
-1. Update the README.md with details of changes to the interface, if applicable.
-2. Update the package.json version number in a commit by itself.
-3. The PR will be merged once you have the sign-off of at least one other developer.
+1. Keep changes focused and scoped to one goal.
+2. Include screenshots or logs when helpful (especially for webview/UI issues).
+3. If the extension version changes, update `CHANGELOG.md` in the same change.
+4. Ensure CI checks pass before requesting review.
 
 ## Commit Guidelines
 
-We use Commitizen for standardized commit messages. Instead of using `git commit`, please use either:
-
-```bash
-npm run commit
-```
-
-or
-
-```bash
-npx cz
-```
-
-This will launch an interactive prompt to help you create a standardized commit message. The commit message format follows the [Conventional Commits specification](https://www.conventionalcommits.org/), which helps maintain a clear and standardized git history.
+Use [Conventional Commits](https://www.conventionalcommits.org/) style where practical, for example:
+- `feat: add xyz`
+- `fix: handle abc edge case`
+- `docs: update contributing guide`
 
 ## Any Contributions You Make Will Be Under the MIT Software License
 
@@ -61,12 +54,11 @@ We use GitHub issues to track public bugs. Report a bug by [opening a new issue]
 - What actually happens
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 
-## Use a Consistent Coding Style
+## Build and Packaging Notes
 
-* Use TypeScript for all source files
-* 2 spaces for indentation rather than tabs
-* Use descriptive variable names
-* Comment your code where necessary
+- Keep the extension offline-friendly: required runtime assets must be packaged in the VSIX.
+- Do not introduce runtime web dependencies that force users to download JavaScript from the internet.
+- Use `npm run build:vsix` to generate a local package for installation tests.
 
 ## License
 

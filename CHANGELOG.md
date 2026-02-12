@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.1.18](https://github.com/shuuul/bioviewer/compare/v0.1.16...v0.1.18) (2026-02-12)
 
+- refactor: modularize extension command handling into `src/commands` and keep `src/extension.ts` as a thin entrypoint
+- refactor: reorganize React webview into `components`, `hooks`, and `services` and remove legacy empty scaffolding directories
+- docs: refresh `CONTRIBUTING.md` and `AGENTS.md` with current architecture, release workflow, and offline packaging guidance
+
 ### [0.1.16](https://github.com/shuuul/bioviewer/compare/v0.1.14...v0.1.16) (2026-02-12)
 
 - refactor: migrate the webview runtime to a React + TypeScript architecture with typed extension/webview messaging

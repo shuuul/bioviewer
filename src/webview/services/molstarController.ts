@@ -1,5 +1,6 @@
-import type { ExtensionToWebviewMessage, WebviewToExtensionMessage } from "../shared/webviewProtocol";
+import type { ExtensionToWebviewMessage, WebviewToExtensionMessage } from "../../shared/webviewProtocol";
 import type { MolstarGlobal, MolstarViewer } from "./molstarTypes";
+import { getErrorMessage } from "./errorUtils";
 
 type Reporter = (message: WebviewToExtensionMessage) => void;
 
@@ -15,13 +16,6 @@ interface ViewerQueryConfig {
   pickPadding?: number;
   disableWboit: boolean;
   preferWebgl1?: boolean;
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
 }
 
 function parseBooleanQueryParam(params: URLSearchParams, key: string): boolean {

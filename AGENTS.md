@@ -31,10 +31,8 @@ This file provides guidance to coding agents when working with code in this repo
 ### Core Components
 
 **Extension Entry Point (`src/extension.ts`)**
-- Registers 5 main commands: openFromDatabase, openFiles, openFolder, addFiles, addFolder
-- Manages file loading logic with memory optimization for large files (>50MB warning)
-- Handles file format detection: structures (.pdb, .cif, .mmcif, .ent), volumes (.mrc, .map, .ccp4), and small molecules (.sdf, .sd, .mol, .mol2, .pdbqt)
-- Supports compressed files (.gz) with browser-side decompression for bandwidth efficiency
+- Thin activation layer: registers 5 commands and wires them to command modules
+- Uses a shared `BioViewer` output channel and disposes it via `context.subscriptions`
 
 **Webview Panel Management (`src/panels/BioViewerPanel.ts`)**
 - Singleton pattern for managing Mol* viewer instances
@@ -42,11 +40,17 @@ This file provides guidance to coding agents when working with code in this repo
 - Implements ready-state management for reliable content loading
 - Injects React/Mol* webview asset URIs and security context (CSP, nonces)
 
-**React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/molstarController.ts`)**
-- React app mounts the webview UI and loading/error overlays
-- Mol* viewer v4.18.0 is initialized via a dedicated TypeScript controller
-- Handles multiple loading methods: database APIs, local file data, volume rendering
-- Implements blob URL management and gzip decompression for efficient loading
+**Command Modules (`src/commands/*.ts`)**
+- `databaseCommands.ts`: database picker + accession prompt + `loadPdb/loadAlphaFoldDb/loadEmdb`
+- `fileCommands.ts`: open/add files/folders, panel selection, file reading, and command dispatch
+- `fileTypes.ts`: supported extension list, open dialog filters, folder glob pattern, file format/command mapping
+- `types.ts`: shared command argument typings
+
+**React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
+- React app mounts UI shell and uses a hook to manage viewer lifecycle and extension messaging
+- UI overlay is split into reusable components (`components/ViewerOverlay.tsx`)
+- Mol* viewer v4.18.0 initialization and load queue logic live in services (`services/molstarController.ts`)
+- Blob URL management and gzip decompression happen in the webview service layer
 
 ### Data Flow Architecture
 
@@ -77,6 +81,7 @@ This file provides guidance to coding agents when working with code in this repo
 - Bundles extension code into `dist/extension.js` and React webview code into `dist/webview/app.js` + `app.css`
 - Copies Mol* library files from node_modules to `dist/molstar/`
 - Copies webview HTML template and resources to dist/
+- Keeps Mol* runtime local in the VSIX (no runtime JS fetch from CDN)
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:
@@ -93,7 +98,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### Development Notes
 
-- Use `BioViewerPanel.log()` for consistent logging across the extension
+- Use the shared `BioViewer` output channel and `appendLine()` for extension logs
 - Always check file size before processing with `vscode.workspace.fs.stat()`
 - Test with large files (>50MB) to verify memory handling
 - Webview debugging available in VS Code's Output panel ("BioViewer" channel)
