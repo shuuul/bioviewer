@@ -28,10 +28,10 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 | Command | Description |
 |---------|-------------|
 | `BioViewer: Open Structure from Database` | Load from PDB, AlphaFold, or EMDB |
-| `BioViewer: Open Files` | Open selected files in new panel |
+| `BioViewer: Open Files` | Open selected files in new tab |
 | `BioViewer: Open Folder` | Load all supported files from directory |
-| `BioViewer: Add Files to Current Panel` | Add files to active panel |
-| `BioViewer: Add Folder to Current Panel` | Add all supported files from directory to active panel |
+| `BioViewer: Add Files to Current Tab` | Add files to active tab |
+| `BioViewer: Add Folder to Current Tab` | Add all supported files from directory to active tab |
 
 ### Supported Formats
 

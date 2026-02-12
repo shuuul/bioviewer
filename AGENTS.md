@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## Essential Commands
 
@@ -19,11 +19,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Release Management
 - `npm run version` - Generate changelog and bump version using standard-version
+- When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
 
 ## Memory
 
 ### Release Management
-- Update @CHANGELOG.md when update version
+- Automatically update `CHANGELOG.md` whenever the version is updated.
 
 ## Architecture Overview
 
