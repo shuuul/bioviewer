@@ -1,6 +1,19 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+### [0.2.0](https://github.com/shuuul/bioviewer/compare/v0.1.20...v0.2.0) (2026-03-08)
+
+- perf: add `.vscodeignore` to exclude `node_modules/`, `src/`, `out/`, `test-resources/`, and source maps from VSIX package (44 MB → 3.2 MB)
+- chore: remove redundant `"files"` field from `package.json` in favor of `.vscodeignore`
+
+### [0.1.20](https://github.com/shuuul/bioviewer/compare/v0.1.18...v0.1.20) (2026-03-08)
+
+- chore(deps): upgrade Mol\* from v4.18.0 to v5.7.0
+- chore(deps): replace deprecated `standard-version` with `commit-and-tag-version`
+- chore(deps): replace unmaintained `npm-run-all` with `npm-run-all2`
+- chore(deps): update `@vscode/test-cli` to 0.0.12 and refresh all dev dependencies
+- docs: update Mol\* version references in AGENTS.md and README.md
 
 ### [0.1.18](https://github.com/shuuul/bioviewer/compare/v0.1.16...v0.1.18) (2026-02-12)
 

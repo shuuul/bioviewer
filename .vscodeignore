@@ -1,0 +1,29 @@
+# Source and build artifacts
+src/**
+out/**
+test-resources/**
+node_modules/**
+
+# Config and dev files
+.vscode/**
+.vscode-test/**
+.vscode-test.mjs
+.github/**
+.git/**
+.gitignore
+.pre-commit-config.yaml
+.DS_Store
+tsconfig.json
+esbuild.js
+eslint.config.mjs
+AGENTS.md
+CONTRIBUTING.md
+
+# Source maps (large, not needed at runtime)
+dist/**/*.map
+
+# Mol* files not needed at runtime
+dist/molstar/index.html
+dist/molstar/embedded.html
+dist/molstar/mvs.html
+dist/molstar/favicon.ico

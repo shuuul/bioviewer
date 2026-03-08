@@ -18,13 +18,17 @@ This file provides guidance to coding agents when working with code in this repo
 - `npm run clean` - Clean build artifacts from dist/ and out/ directories
 
 ### Release Management
-- `npm run version` - Generate changelog and bump version using standard-version
+- `npm run version` - Generate changelog and bump version using commit-and-tag-version
 - When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
 
 ## Memory
 
 ### Release Management
 - Automatically update `CHANGELOG.md` whenever the version is updated.
+
+### Packaging
+- The `.vscodeignore` file controls VSIX contents. Since esbuild bundles everything into `dist/`, `node_modules/` and source files are excluded. Keep `.vscodeignore` in sync when adding new top-level directories or build artifacts.
+- Do NOT add a `"files"` field to `package.json` — it conflicts with `.vscodeignore`.
 
 ## Architecture Overview
 
@@ -49,7 +53,7 @@ This file provides guidance to coding agents when working with code in this repo
 **React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
 - React app mounts UI shell and uses a hook to manage viewer lifecycle and extension messaging
 - UI overlay is split into reusable components (`components/ViewerOverlay.tsx`)
-- Mol* viewer v4.18.0 initialization and load queue logic live in services (`services/molstarController.ts`)
+- Mol* viewer v5.7.0 initialization and load queue logic live in services (`services/molstarController.ts`)
 - Blob URL management and gzip decompression happen in the webview service layer
 
 ### Data Flow Architecture
