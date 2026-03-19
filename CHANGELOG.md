@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+### [0.2.2](https://github.com/shuuul/bioviewer/compare/v0.2.0...v0.2.2) (2026-03-19)
+
+- fix: keep `engines.vscode` at `^1.105.1` for Cursor compatibility
+- chore: add GitHub workflow to publish releases to VS Code Marketplace and OpenVSX
+
 ### [0.2.0](https://github.com/shuuul/bioviewer/compare/v0.1.20...v0.2.0) (2026-03-08)
 
 - perf: add `.vscodeignore` to exclude `node_modules/`, `src/`, `out/`, `test-resources/`, and source maps from VSIX package (44 MB → 3.2 MB)
