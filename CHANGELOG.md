@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.4](https://github.com/shuuul/bioviewer/compare/v0.2.2...v0.2.4) (2026-03-29)
+
+- chore(deps): resolve npm audit findings via targeted overrides (`handlebars`, `path-to-regexp`, `fast-xml-parser`, `undici`, `diff`, `serialize-javascript`)
+- chore(deps): align test dependency chain by updating `@vscode/test-cli` to `0.0.11`
+- fix: keep `engines.vscode` pinned at `^1.105.1` for Cursor compatibility
+
 ### [0.2.2](https://github.com/shuuul/bioviewer/compare/v0.2.0...v0.2.2) (2026-03-19)
 
 - fix: keep `engines.vscode` at `^1.105.1` for Cursor compatibility

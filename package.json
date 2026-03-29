@@ -3,7 +3,7 @@
   "displayName": "BioViewer",
   "publisher": "shuuul",
   "description": "VSCode Extension for visualizing Biological Macrostructures and Electron Imaging.",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "icon": "dist/resources/img/icon.png",
   "repository": {
     "type": "git",
@@ -119,10 +119,10 @@
     "@types/node": "^20.19.37",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/vscode": "1.105.0",
+    "@types/vscode": "^1.105.1",
     "@typescript-eslint/eslint-plugin": "^8.57.1",
     "@typescript-eslint/parser": "^8.57.1",
-    "@vscode/test-cli": "0.0.12",
+    "@vscode/test-cli": "0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "commit-and-tag-version": "^12.7.1",
@@ -136,6 +136,14 @@
     "molstar": "^5.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
+  },
+  "overrides": {
+    "handlebars": "4.7.9",
+    "path-to-regexp": "8.4.0",
+    "fast-xml-parser": "5.5.9",
+    "undici": "7.24.6",
+    "diff": "8.0.4",
+    "serialize-javascript": "7.0.5"
   },
   "galleryBanner": {
     "color": "#C80000",
