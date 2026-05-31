@@ -1,7 +1,7 @@
 # BioViewer
 
-[![Version](https://img.shields.io/visual-studio-marketplace/v/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/shuuul.bioviewer)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
+[![Version](https://vsmarketplacebadges.dev/version/shuuul.bioviewer.svg)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
+[![Installs](https://vsmarketplacebadges.dev/installs/shuuul.bioviewer.svg)](https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Pre-commit: prek](https://img.shields.io/badge/pre--commit-prek-blue)](https://github.com/j178/prek)
 
