@@ -2,6 +2,66 @@
 
 This file provides guidance to coding agents when working with code in this repository.
 
+## Coding Rules
+
+### Core Defaults
+
+- Default to forward development.
+- Do not preserve backward compatibility unless explicitly requested.
+- Prefer the simplest implementation that satisfies the requirement.
+- Remove dead code, obsolete branches, compatibility layers, unused parameters, and stale helper functions during edits.
+- Keep public APIs small and direct.
+
+### Abstraction and Code Shape
+
+- Do not add thin wrapper functions that only rename a function, forward arguments, or mirror an existing API.
+- Add a wrapper only when it contributes at least one of:
+  - domain meaning,
+  - input validation,
+  - output normalization,
+  - composition of multiple operations,
+  - a materially clearer call boundary.
+- Do not duplicate logic across files or functions.
+- Extract shared code only when the abstraction is clearer than the repeated code.
+- Prefer one obvious implementation for each behavior.
+- Merge overlapping helpers and remove single-use indirection.
+
+### Interfaces and Data Flow
+
+- Keep interfaces compact and explicit.
+- Add parameters only when the current task requires them.
+- Avoid speculative extensibility.
+- Prefer direct data flow over layered indirection.
+- Prefer structured outputs over ad hoc dictionaries and loosely shaped blobs.
+
+### Validation and Failure Semantics
+
+- Validate external inputs at boundaries.
+- Fail loudly when required data, required outputs, or required intermediate artifacts are missing.
+- Preserve useful failure signals.
+- Raise explicit, domain-appropriate errors when validation fails.
+- Do not swallow exceptions.
+- Do not add silent fallback paths for required behavior.
+
+### Readability and Maintainability
+
+- Prefer readability over cleverness.
+- Prefer explicit control flow over dense one-liners.
+- Keep nesting shallow.
+- Split files when they contain multiple unrelated responsibilities.
+- Write comments only for non-obvious logic, invariants, edge cases, or algorithmic intent.
+- Keep comments factual and concise.
+
+### Anti-Patterns
+
+- Thin wrappers with no behavioral value.
+- Redundant helpers that duplicate existing code paths.
+- Silent fallback logic for required data.
+- Broad exception handling with vague recovery.
+- Compatibility shims added by default.
+- Dead branches kept "just in case".
+- Comment noise that restates the code.
+
 ## Essential Commands
 
 ### Development Workflow
@@ -100,6 +160,28 @@ This file provides guidance to coding agents when working with code in this repo
 - **File Loading**: Graceful degradation with user feedback for unsupported formats
 - **Memory Issues**: Proactive file size checking with user confirmation dialogs
 - **API Failures**: Comprehensive error reporting with specific failure reasons
+
+## Logging Conventions
+
+### Extension-Side Logging (`outputChannel.appendLine`)
+
+All extension-side logs follow these rules:
+- Use plain English sentences with **no bracket prefixes** (`[Constructor]`, `[Create]`, etc.)
+- Start with a lowercase verb — present tense for ongoing actions, past tense for completed ones:
+  - `creating panel...` → `panel created (42ms)`
+  - `loading file: example.cif` → `file loaded: example.cif`
+- Use `Warning: ` prefix for warnings
+- Use `Error: ` prefix for errors
+- Use `debug: ` prefix for diagnostic details forwarded from the webview
+- Append timing in parentheses: `panel created in 42ms`
+- Keep messages concise and human-readable
+
+### Webview-Side Logging (`emitInfo` / `emitError` / `emitDebug`)
+
+- Use `emitInfo()` for successful results: `"Loaded PDB: 6giq"`
+- Use `emitError()` for failures: `"Failed to load PDB 6giq: connection timed out"`
+- Use `emitDebug()` for diagnostic details: `"decompressing gzip content in webview"`
+- Messages should be short, descriptive, and consistent with extension-side style
 
 ### Development Notes
 

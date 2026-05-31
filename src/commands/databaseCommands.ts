@@ -11,28 +11,28 @@ const DATABASE_CONFIG: Record<string, DatabaseConfig> = {
   PDB: { placeholder: "Enter PDB ID (e.g. 6giq)", command: "loadPdb" },
   "AlphaFoldDB (UniProt)": {
     placeholder: "Enter UniProt ID (e.g. P68871)",
-    command: "loadAlphaFoldDb"
+    command: "loadAlphaFoldDb",
   },
-  EMDB: { placeholder: "Enter EMDB ID (e.g. 1234)", command: "loadEmdb" }
+  EMDB: { placeholder: "Enter EMDB ID (e.g. 1234)", command: "loadEmdb" },
 };
 
 export async function openFromDatabase(
   context: vscode.ExtensionContext,
-  outputChannel: vscode.OutputChannel
+  outputChannel: vscode.OutputChannel,
 ): Promise<void> {
   outputChannel.appendLine("Opening structure from database");
 
   const options = Object.keys(DATABASE_CONFIG);
   const selection = await vscode.window.showQuickPick(options, {
-    placeHolder: "Select database type"
+    placeHolder: "Select database type",
   });
 
   if (!selection) {
-    outputChannel.appendLine("User cancelled database selection");
+    outputChannel.appendLine("user cancelled database selection");
     return;
   }
 
-  outputChannel.appendLine(`User selected: ${selection}`);
+  outputChannel.appendLine(`user selected: ${selection}`);
 
   const config = DATABASE_CONFIG[selection];
   if (!config) {
@@ -41,20 +41,20 @@ export async function openFromDatabase(
 
   const accession = await vscode.window.showInputBox({
     placeHolder: config.placeholder,
-    prompt: `Enter the ${selection} identifier`
+    prompt: `Enter the ${selection} identifier`,
   });
 
   if (!accession?.trim()) {
-    outputChannel.appendLine("User cancelled or entered empty accession");
+    outputChannel.appendLine("user cancelled or entered empty accession");
     return;
   }
 
-  outputChannel.appendLine(`User entered accession: ${accession}`);
+  outputChannel.appendLine(`user entered accession: ${accession}`);
 
   const panel = BioViewerPanel.create(
     context.extensionUri,
     `BioViewer - ${selection}: ${accession}`,
-    outputChannel
+    outputChannel,
   );
 
   await panel.waitForReady();
