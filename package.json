@@ -151,12 +151,12 @@
   },
   "badges": [
     {
-      "url": "https://img.shields.io/visual-studio-marketplace/v/shuuul.bioviewer",
+      "url": "https://vsmarketplacebadges.dev/version/shuuul.bioviewer.svg",
       "href": "https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer",
       "description": "VS Marketplace Version"
     },
     {
-      "url": "https://img.shields.io/visual-studio-marketplace/i/shuuul.bioviewer",
+      "url": "https://vsmarketplacebadges.dev/installs/shuuul.bioviewer.svg",
       "href": "https://marketplace.visualstudio.com/items?itemName=shuuul.bioviewer",
       "description": "VS Marketplace Installs"
     }
