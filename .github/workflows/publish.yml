@@ -4,9 +4,21 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target"
+        required: true
+        type: choice
+        default: openvsx
+        options:
+          - all
+          - vscode
+          - openvsx
 
 jobs:
-  publish:
+  publish-vscode-marketplace:
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'vscode'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -24,6 +36,23 @@ jobs:
 
       - name: Publish to VS Code Marketplace
         run: npx @vscode/vsce publish -p ${{ secrets.VSCE_PAT }}
+
+  publish-openvsx:
+    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'openvsx'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Publish to OpenVSX
         run: npx ovsx publish -p ${{ secrets.OVSX_PAT }}
