@@ -80,6 +80,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### Release Management
 - `npm run version` - Generate changelog and bump version using commit-and-tag-version
+- To publish a release, push a tag that matches `package.json` version after the release commit is on `origin/master`: `VERSION=$(node -p "require('./package.json').version"); git tag "v$VERSION"; git push origin "v$VERSION"`. The `v*` tag triggers the GitHub Release VSIX upload and marketplace publish workflows.
 - When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
 - Update `CHANGELOG.md` for every user-visible behavior change, format support change, command/menu change, or documented workflow change, even when the extension version is not bumped.
 - Keep `package.json` `engines.vscode` at `^1.105.1` to preserve Cursor compatibility.
