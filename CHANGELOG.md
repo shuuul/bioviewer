@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.1](https://github.com/shuuul/bioviewer/compare/v0.3.0...v0.3.1) (2026-06-17)
+
+- fix: replace retired VS Marketplace sidebar badge URLs with `vsmarketplacebadges.dev` badges.
+- ci: allow VS Marketplace and OpenVSX publishing to run independently from manual workflow dispatch.
+
 ## [0.3.0](https://github.com/shuuul/bioviewer/compare/v0.2.4...v0.3.0) (2026-06-17)
 
 - feat: add Chimera `.cmm` marker model support for prompt-point overlays, including marker spheres, optional marker links, `.cmm.gz` loading, Explorer menu entries, and folder loading.
