@@ -1,5 +1,5 @@
 export type DatabaseCommand = "loadPdb" | "loadAlphaFoldDb" | "loadEmdb";
-export type FileLoadCommand = "loadStructure" | "loadVolume";
+export type FileLoadCommand = "loadStructure" | "loadVolume" | "loadMarkers";
 export type ExtensionCommand = DatabaseCommand | FileLoadCommand;
 
 export type ExtensionToWebviewMessage =
@@ -18,6 +18,14 @@ export type ExtensionToWebviewMessage =
       command: "loadVolume";
       data: string;
       format: string;
+      isBinary: boolean;
+      isCompressed: boolean;
+      label: string;
+    }
+  | {
+      command: "loadMarkers";
+      data: string;
+      format: "cmm";
       isBinary: boolean;
       isCompressed: boolean;
       label: string;
@@ -78,6 +86,7 @@ export function isExtensionToWebviewMessage(value: unknown): value is ExtensionT
       return hasString(value, "accession");
     case "loadStructure":
     case "loadVolume":
+    case "loadMarkers":
       return isFileLoadMessage(value);
     default:
       return false;

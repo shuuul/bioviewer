@@ -13,6 +13,7 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 - **🌐 Remote SSH Ready**: Optimized for remote development with efficient file transfer
 - **📦 Compression Support**: Automatic .gz file handling saves bandwidth - especially valuable for remote connections
 - **🧬 Multiple Formats**: PDB, mmCIF, and all standard structural biology file formats
+- **📍 Marker Overlays**: Chimera `.cmm` marker models render prompt points and marker links on top of loaded maps or structures
 - **🔗 Database Integration**: Direct access to PDB, AlphaFold, and EMDB databases
 
 ## 🚀 Installation
@@ -41,7 +42,20 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 | **Structures** | `.pdb`, `.cif`, `.mmcif`, `.mcif`, `.ent` |
 | **Volume Maps** | `.mrc`, `.map`, `.ccp4` |
 | **Small Molecules** | `.sdf`, `.sd`, `.mol`, `.mol2`, `.pdbqt` |
+| **Marker Models** | `.cmm` |
 | **Compressed** | All above formats with `.gz` compression |
+
+### CMM Marker Models
+
+BioViewer supports Chimera marker model files (`.cmm` and `.cmm.gz`) as marker overlays. A CMM file must contain one `<marker_set>` with one or more direct `<marker>` children:
+
+```xml
+<marker_set name="example_prompt">
+  <marker id="1" x="59.4500" y="95.1850" z="24.3564" r="1.0" g="0.0" b="0.0" radius="1.0" />
+</marker_set>
+```
+
+Required marker attributes are `id`, `x`, `y`, and `z`. Optional `radius`, `r`, `g`, and `b` attributes control sphere size and color. Direct `<link id1="..." id2="...">` children are supported when both marker ids exist; links render as tubes. CMM coordinates are rendered as stored so prompt points can be overlaid on matching MRC/MAP/CCP4 density maps without replacing the map.
 
 ### Quick Start
 

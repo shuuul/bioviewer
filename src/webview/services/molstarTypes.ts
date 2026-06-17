@@ -1,3 +1,5 @@
+import type { PluginUIContext } from "molstar/lib/mol-plugin-ui/context";
+
 export interface MolstarViewer {
   loadPdb: (accession: string) => Promise<void>;
   loadAlphaFoldDb: (accession: string) => Promise<void>;
@@ -9,23 +11,7 @@ export interface MolstarViewer {
     params?: Record<string, unknown>
   ) => Promise<void>;
   loadVolumeFromUrl?: (params: unknown, isosurfaces: unknown[]) => Promise<void>;
-  plugin?: {
-    managers?: {
-      volume?: {
-        hierarchy?: {
-          current?: {
-            volumes?: Array<{
-              cell?: {
-                obj?: {
-                  label?: string;
-                };
-              };
-            }>;
-          };
-        };
-      };
-    };
-  };
+  plugin?: PluginUIContext;
 }
 
 export interface MolstarGlobal {

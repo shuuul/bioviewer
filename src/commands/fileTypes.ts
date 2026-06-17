@@ -13,7 +13,8 @@ export const SUPPORTED_EXTENSIONS = [
   "sd",
   "mol",
   "mol2",
-  "pdbqt"
+  "pdbqt",
+  "cmm"
 ] as const;
 
 export interface FileLoadConfig {
@@ -32,7 +33,8 @@ export function buildFileFilters(): Record<string, string[]> {
     "All Supported Files": SUPPORTED_EXTENSIONS.flatMap((extension) => [extension, `${extension}.gz`]),
     "Structure Files": ["pdb", "cif", "mmcif", "mcif", "ent"].flatMap((extension) => [extension, `${extension}.gz`]),
     "Volume/Density Maps": ["map", "mrc", "ccp4"].flatMap((extension) => [extension, `${extension}.gz`]),
-    "Small Molecules": ["sdf", "sd", "mol", "mol2", "pdbqt"].flatMap((extension) => [extension, `${extension}.gz`])
+    "Small Molecules": ["sdf", "sd", "mol", "mol2", "pdbqt"].flatMap((extension) => [extension, `${extension}.gz`]),
+    "Marker Files": ["cmm", "cmm.gz"]
   };
 }
 
@@ -56,6 +58,10 @@ export function getFileConfig(extension: string): FileLoadConfig | null {
 
   if ([".sdf", ".sd", ".mol", ".mol2", ".pdbqt"].includes(actualExtension)) {
     return { format: "sdf", command: "loadStructure" };
+  }
+
+  if ([".cmm"].includes(actualExtension)) {
+    return { format: "cmm", command: "loadMarkers" };
   }
 
   return null;

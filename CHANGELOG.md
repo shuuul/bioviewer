@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.0](https://github.com/shuuul/bioviewer/compare/v0.2.4...v0.3.0) (2026-06-17)
+
+- feat: add Chimera `.cmm` marker model support for prompt-point overlays, including marker spheres, optional marker links, `.cmm.gz` loading, Explorer menu entries, and folder loading.
+- fix: render CMM markers as generated PLY meshes through the existing Mol* shape loader, avoiding mixed Mol* runtime state-transform errors while preserving marker spheres and link tubes.
+- fix: reduce rendered CMM marker sphere radii so prompt points obscure less density.
+- docs: document CMM file contents, marker attributes, and overlay behavior in README.
+
 ## [0.2.4](https://github.com/shuuul/bioviewer/compare/v0.2.2...v0.2.4) (2026-03-29)
 
 - chore(deps): resolve npm audit findings via targeted overrides (`handlebars`, `path-to-regexp`, `fast-xml-parser`, `undici`, `diff`, `serialize-javascript`)

@@ -81,7 +81,9 @@ This file provides guidance to coding agents when working with code in this repo
 ### Release Management
 - `npm run version` - Generate changelog and bump version using commit-and-tag-version
 - When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
+- Update `CHANGELOG.md` for every user-visible behavior change, format support change, command/menu change, or documented workflow change, even when the extension version is not bumped.
 - Keep `package.json` `engines.vscode` at `^1.105.1` to preserve Cursor compatibility.
+- Do not include Amp as a co-author in commit messages.
 
 ## Memory
 

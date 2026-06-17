@@ -3,6 +3,7 @@ import type {
   WebviewToExtensionMessage,
 } from "../../shared/webviewProtocol";
 import type { MolstarGlobal, MolstarViewer } from "./molstarTypes";
+import { buildCmmPlyMesh, parseCmmMarkerSet } from "./cmmMarkers";
 import { getErrorMessage } from "./errorUtils";
 
 type Reporter = (message: WebviewToExtensionMessage) => void;
@@ -135,6 +136,9 @@ export class MolstarController {
       case "loadVolume":
         this.enqueueTask(() => this.loadVolume(message));
         break;
+      case "loadMarkers":
+        this.enqueueTask(() => this.loadMarkers(message));
+        break;
     }
   }
 
@@ -255,6 +259,28 @@ export class MolstarController {
     return new Blob([finalData.slice().buffer], { type: mimeType });
   }
 
+  private async decodeFileText(
+    data: string,
+    isBinary: boolean,
+    isCompressed: boolean,
+  ): Promise<string> {
+    if (!isBinary) {
+      if (isCompressed) {
+        throw new Error("Compressed marker files must be binary encoded.");
+      }
+
+      return data;
+    }
+
+    let bytes = this.base64ToUint8Array(data);
+    if (isCompressed) {
+      this.emitDebug("decompressing gzip content in webview");
+      bytes = await this.decompressGzip(bytes);
+    }
+
+    return new TextDecoder().decode(bytes);
+  }
+
   private async loadStructure(
     message: Extract<ExtensionToWebviewMessage, { command: "loadStructure" }>,
   ): Promise<void> {
@@ -348,6 +374,68 @@ export class MolstarController {
         URL.revokeObjectURL(blobUrl);
       }
     }
+  }
+
+  private async loadMarkers(
+    message: Extract<ExtensionToWebviewMessage, { command: "loadMarkers" }>,
+  ): Promise<void> {
+    if (message.format !== "cmm") {
+      throw new Error(`Unsupported marker format: ${message.format}`);
+    }
+
+    if (!this.viewer.plugin) {
+      this.emitError("Marker loading is not supported in this Mol* version.");
+      return;
+    }
+
+    try {
+      const xmlText = await this.decodeFileText(
+        message.data,
+        message.isBinary,
+        message.isCompressed,
+      );
+      const markerSet = parseCmmMarkerSet(xmlText, message.label);
+      await this.loadMarkerMesh(message.label, buildCmmPlyMesh(markerSet));
+
+      this.emitInfo(
+        `Loaded markers: ${message.label} (${markerSet.markers.length} marker(s), ${markerSet.links.length} link(s))`,
+      );
+    } catch (error) {
+      this.emitError(
+        `Failed to load markers ${message.label}: ${getErrorMessage(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  private async loadMarkerMesh(label: string, plyText: string): Promise<void> {
+    const plugin = this.viewer.plugin;
+    if (!plugin) {
+      throw new Error("Marker loading is not supported in this Mol* version.");
+    }
+
+    const provider = plugin.dataFormats.get("ply");
+    if (!provider) {
+      throw new Error("PLY marker mesh loading is not supported in this Mol* version.");
+    }
+
+    if (!provider.visuals) {
+      throw new Error("PLY marker mesh visuals are not supported in this Mol* version.");
+    }
+
+    const data = await plugin.builders.data.rawData({ data: plyText, label });
+    const parsed = await provider.parse(plugin, data);
+    const shape = (parsed as {
+      shape?: { cell?: { obj?: { data?: { label?: string }; label?: string } } };
+    }).shape;
+    const shapeObject = shape?.cell?.obj;
+    if (shapeObject) {
+      shapeObject.label = label;
+      if (shapeObject.data) {
+        shapeObject.data.label = label;
+      }
+    }
+    await provider.visuals(plugin, parsed);
   }
 
   private renameLastVolume(label: string): void {
