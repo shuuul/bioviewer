@@ -70,6 +70,7 @@ This file provides guidance to coding agents when working with code in this repo
 - `npm run check-types` - TypeScript type checking only
 - `npm run lint` - ESLint code quality checks
 - `npm run test` - Run all tests using vscode-test framework
+- `uvx prek run --all-files` - Run pre-commit checks; use `uvx prek`, not `pre-commit`
 
 ### Testing & Packaging
 - `npm run compile-tests` - Compile test files to out/ directory
