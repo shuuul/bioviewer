@@ -101,12 +101,13 @@
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:tsc": "npm run tsc7 -- --noEmit --watch --project tsconfig.json",
     "package": "npm run check-types && npm run lint && node esbuild.js --production",
-    "compile-tests": "rm -rf out && tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
+    "compile-tests": "rm -rf out && npm run tsc7 -- -p . --outDir out",
+    "watch-tests": "npm run tsc7 -- -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile",
-    "check-types": "tsc --noEmit",
+    "tsc7": "node ./node_modules/typescript-7/bin/tsc",
+    "check-types": "npm run tsc7 -- --noEmit",
     "lint": "eslint src",
     "test": "vscode-test",
     "prepare": "npm run compile",
@@ -130,7 +131,8 @@
     "eslint": "^10.8.0",
     "npm-run-all2": "^8.0.4",
     "ovsx": "^0.10.9",
-    "typescript": "^5.9.3"
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript-7": "npm:typescript@^7.0.2"
   },
   "dependencies": {
     "molstar": "^5.7.0",

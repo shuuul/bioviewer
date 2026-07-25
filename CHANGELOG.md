@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [Unreleased]
 
+- chore(deps): adopt TypeScript 7 side-by-side (`typescript-7` for `tsc`, `@typescript/typescript6` alias for `typescript-eslint`).
 - chore(deps): refresh lockfile and dev tooling (`eslint` `^10.8.0`, `@typescript-eslint/*` `^8.65.0`, `@vscode/test-cli` `^0.0.15`).
 - chore(deps): bump transitive security fixes for `immutable` `5.1.9`, `linkify-it` `5.0.2`, and related npm audit findings via `brace-expansion` override `5.0.8`.
 

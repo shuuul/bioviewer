@@ -1,3 +1,5 @@
+declare module "*.css";
+
 interface VsCodeWebviewApi {
   postMessage: (message: unknown) => void;
   getState: <T = unknown>() => T | undefined;
