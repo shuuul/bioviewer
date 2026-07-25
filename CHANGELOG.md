@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [Unreleased]
+
+- chore(deps): refresh lockfile and dev tooling (`eslint` `^10.8.0`, `@typescript-eslint/*` `^8.65.0`, `@vscode/test-cli` `^0.0.15`).
+- chore(deps): bump transitive security fixes for `immutable` `5.1.9`, `linkify-it` `5.0.2`, and related npm audit findings via `brace-expansion` override `5.0.8`.
+
 ## [0.3.2](https://github.com/shuuul/bioviewer/compare/v0.3.1...v0.3.2) (2026-07-16)
 
 - chore(deps): bump `undici` override to `7.28.0` to address SOCKS5 proxy pool reuse and related npm audit findings in the `@vscode/vsce` → `cheerio` dependency chain.
