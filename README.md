@@ -71,7 +71,7 @@ BioViewer is optimized for remote SSH scenarios:
 
 ## ⚙️ Requirements
 
-- Visual Studio Code ^1.105.1 (for compatibility with [Cursor](https://www.cursor.com/))
+- Visual Studio Code ^1.128.0 (aligned with current [Cursor](https://www.cursor.com/) Extension API)
 - Modern web browser (for WebGL support)
 
 ## 🙏 Acknowledgments
@@ -79,7 +79,7 @@ BioViewer is optimized for remote SSH scenarios:
 This extension was inspired by [molstar/VSCoding-Sequence](https://github.com/molstar/VSCoding-Sequence) and builds upon the powerful [Mol* molecular visualization library](https://github.com/molstar/molstar).
 
 **Key Dependencies:**
-- **[Mol*](https://molstar.org/)** (v5.7.0) - The core molecular visualization engine
+- **[Mol*](https://molstar.org/)** (v5.11.0) - The core molecular visualization engine
 - **[PDBe](https://www.ebi.ac.uk/pdbe/)** & **[RCSB PDB](https://www.rcsb.org/)** - Structural databases
 - **[AlphaFold](https://alphafold.ebi.ac.uk/)** - AI protein structure predictions
 - **[EMDB](https://www.ebi.ac.uk/emdb/)** - Electron Microscopy Data Bank

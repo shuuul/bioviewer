@@ -83,7 +83,7 @@ This file provides guidance to coding agents when working with code in this repo
 - To publish a release, push a tag that matches `package.json` version after the release commit is on `origin/master`: `VERSION=$(node -p "require('./package.json').version"); git tag "v$VERSION"; git push origin "v$VERSION"`. The `v*` tag triggers the GitHub Release VSIX upload and marketplace publish workflows.
 - When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
 - Update `CHANGELOG.md` for every user-visible behavior change, format support change, command/menu change, or documented workflow change, even when the extension version is not bumped.
-- Keep `package.json` `engines.vscode` at `^1.105.1` to preserve Cursor compatibility.
+- Keep `package.json` `engines.vscode` aligned with the current Cursor VS Code Extension API (`^1.128.0`).
 - Do not include Amp as a co-author in commit messages.
 
 ## Memory
@@ -118,7 +118,7 @@ This file provides guidance to coding agents when working with code in this repo
 **React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
 - React app mounts UI shell and uses a hook to manage viewer lifecycle and extension messaging
 - UI overlay is split into reusable components (`components/ViewerOverlay.tsx`)
-- Mol* viewer v5.7.0 initialization and load queue logic live in services (`services/molstarController.ts`)
+- Mol* viewer v5.11.0 initialization and load queue logic live in services (`services/molstarController.ts`)
 - Blob URL management and gzip decompression happen in the webview service layer
 
 ### Data Flow Architecture
