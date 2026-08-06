@@ -2,10 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## Unreleased
-
-- perf: ship only Mol* runtime assets (`molstar.js`, `molstar.css`) and exclude duplicate top-level `resources/` from the VSIX; optional Mol* demo themes/images are not packaged.
-
+## [0.3.5](https://github.com/shuuul/bioviewer/compare/v0.3.4...v0.3.5) (2026-08-06)
 ## [0.3.4](https://github.com/shuuul/bioviewer/compare/v0.3.3...v0.3.4) (2026-08-06)
 
 - chore: raise `engines.vscode` to `^1.128.0` now that Cursor exposes VS Code Extension API 1.128.0; update `@types/vscode` to `1.125.0`.
