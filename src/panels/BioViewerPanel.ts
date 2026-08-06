@@ -214,7 +214,6 @@ export class BioViewerPanel {
       retainContextWhenHidden: true,
       localResourceRoots: [
         vscode.Uri.joinPath(extensionUri, "dist"),
-        vscode.Uri.joinPath(extensionUri, "resources"),
       ],
     });
 

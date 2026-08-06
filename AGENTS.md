@@ -148,13 +148,13 @@ This file provides guidance to coding agents when working with code in this repo
 
 **esbuild Configuration**:
 - Bundles extension code into `dist/extension.js` and React webview code into `dist/webview/app.js` + `app.css`
-- Copies Mol* library files from node_modules to `dist/molstar/`
+- Copies only Mol* runtime assets (`molstar.js`, `molstar.css`) from `node_modules/molstar/build/viewer` to `dist/molstar/`
 - Copies webview HTML template and resources to dist/
 - Keeps Mol* runtime local in the VSIX (no runtime JS fetch from CDN)
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:
-- `copyMolstarPlugin` - Ensures Mol* viewer files are available to webview
+- `copyMolstarPlugin` - Copies only the Mol* JS/CSS runtime assets used by the webview
 - `copyHtmlPlugin` - Copies webview template with placeholder replacement
 - `copyResourcesPlugin` - Copies static assets (icons, etc.)
 

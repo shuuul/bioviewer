@@ -29,15 +29,26 @@ function createProblemMatcherPlugin(buildName) {
   };
 }
 
+/** Runtime assets BioViewer loads via webview URIs. Optional Mol* demo
+ *  themes/HTML/maps are omitted; skybox/background image presets are also
+ *  omitted (default background remains Off). */
+const MOLSTAR_RUNTIME_FILES = ["molstar.js", "molstar.css"];
+
 const copyMolstarPlugin = {
   name: "copy-molstar-plugin",
   setup(build) {
     build.onEnd(() => {
       const molstarSrcDir = path.join(__dirname, "node_modules", "molstar", "build", "viewer");
       const molstarDestDir = path.join(__dirname, "dist", "molstar");
+      fs.rmSync(molstarDestDir, { recursive: true, force: true });
       fs.mkdirSync(molstarDestDir, { recursive: true });
-      fs.cpSync(molstarSrcDir, molstarDestDir, { recursive: true });
-      console.log("Copied Molstar module to dist/molstar/");
+      for (const file of MOLSTAR_RUNTIME_FILES) {
+        fs.copyFileSync(
+          path.join(molstarSrcDir, file),
+          path.join(molstarDestDir, file),
+        );
+      }
+      console.log("Copied Molstar runtime assets to dist/molstar/");
     });
   }
 };

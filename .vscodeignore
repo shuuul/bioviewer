@@ -4,6 +4,10 @@ out/**
 test-resources/**
 node_modules/**
 
+# Build-input resources are copied to dist/resources for packaging
+# (package.json icon points at dist/resources/img/icon.png).
+resources/**
+
 # Config and dev files
 .vscode/**
 .vscode-test/**
@@ -22,8 +26,10 @@ CONTRIBUTING.md
 # Source maps (large, not needed at runtime)
 dist/**/*.map
 
-# Mol* files not needed at runtime
+# Mol* demos / optional assets not used by BioViewer runtime
 dist/molstar/index.html
 dist/molstar/embedded.html
 dist/molstar/mvs.html
 dist/molstar/favicon.ico
+dist/molstar/images/**
+dist/molstar/theme/**
