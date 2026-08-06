@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
 ## [0.3.4](https://github.com/shuuul/bioviewer/compare/v0.3.3...v0.3.4) (2026-08-06)
+
+- chore: raise `engines.vscode` to `^1.128.0` now that Cursor exposes VS Code Extension API 1.128.0; update `@types/vscode` to `1.125.0`.
+- chore: raise `engines.node` to `>=22.22.2` and move GitHub Actions to Node 24 for tooling compatibility.
+- chore(deps): bump runtime deps (`molstar` `^5.11.0`, `react`/`react-dom` `^19.2.8`) and refresh dev tooling (`@typescript-eslint/*` `^8.66.0`, `@vscode/vsce` `^3.9.2`).
+- chore(deps): major bumps for `ovsx` `^1.1.0`, `@vscode/test-electron` `^3.1.0`, `commit-and-tag-version` `^13.1.2`, `npm-run-all2` `^9.0.3`, and `@types/node` `^24`.
+- chore(deps): resolve npm audit findings via overrides (`fast-uri` `3.1.5`, `brace-expansion` `5.0.9`, `undici` `7.29.0`).
+
 ## [0.3.3](https://github.com/shuuul/bioviewer/compare/v0.3.2...v0.3.3) (2026-07-25)
 
 - chore(deps): adopt TypeScript 7 side-by-side (`typescript-7` for `tsc`, `@typescript/typescript6` alias for `typescript-eslint`).
