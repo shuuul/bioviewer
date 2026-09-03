@@ -2,10 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## Unreleased
-
-- ci: upgrade GitHub Actions to Node 24 runtimes (`actions/checkout@v7`, `actions/setup-node@v7`, `softprops/action-gh-release@v3`).
-
+## [0.3.6](https://github.com/shuuul/bioviewer/compare/v0.3.5...v0.3.6) (2026-09-03)
 ## [0.3.5](https://github.com/shuuul/bioviewer/compare/v0.3.4...v0.3.5) (2026-08-06)
 
 - perf: ship only Mol* runtime assets (`molstar.js`, `molstar.css`) and exclude duplicate top-level `resources/` from the VSIX; optional Mol* demo themes/images are not packaged.
