@@ -125,7 +125,7 @@
     "@typescript-eslint/parser": "^8.66.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce": "^4.0.0",
     "commit-and-tag-version": "^13.1.2",
     "esbuild": "^0.28.1",
     "eslint": "^10.8.0",
@@ -140,14 +140,14 @@
     "react-dom": "^19.2.8"
   },
   "overrides": {
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "handlebars": "4.7.9",
-    "path-to-regexp": "8.4.0",
-    "fast-xml-parser": "5.7.0",
-    "fast-uri": "3.1.7",
-    "undici": "7.29.0",
+    "path-to-regexp": "8.4.2",
+    "fast-xml-parser": "5.11.1",
+    "fast-uri": "3.1.8",
+    "undici": "7.29.1",
     "diff": "8.0.4",
-    "serialize-javascript": "7.0.5"
+    "serialize-javascript": "7.1.1"
   },
   "galleryBanner": {
     "color": "#C80000",
@@ -166,10 +166,9 @@
     }
   ],
   "allowScripts": {
-    "@vscode/vsce-sign@2.0.9": true,
-    "esbuild@0.28.1": true,
+    "@vscode/vsce-sign@2.1.0": true,
+    "esbuild@0.28.2": true,
     "fsevents@2.3.3": true,
-    "keytar@7.9.0": true,
     "@scarf/scarf": false
   }
 }
