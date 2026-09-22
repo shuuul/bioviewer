@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.3.7](https://github.com/shuuul/bioviewer/compare/v0.3.6...v0.3.7) (2026-09-22)
+
+- chore(deps): bump `@vscode/vsce` to `^4.0.0` and refresh security override pins to latest (`brace-expansion` `5.0.12`, `path-to-regexp` `8.4.2`, `fast-xml-parser` `5.11.1`, `fast-uri` `3.1.8`, `undici` `7.29.1`, `serialize-javascript` `7.1.1`); npm audit reports 0 vulnerabilities.
+- chore: declare `"types": ["node", "mocha"]` in `tsconfig.json`; the updated dependency tree no longer auto-includes `@types/node` under `tsc7`, which broke type checking with 14 TS2591 errors.
+- chore(deps): keep `@types/vscode` at `1.125.0` (highest types below the Cursor 1.128.0 host API) and `@types/node` on `24.x` (matches the Node 24 runtime); skip cross-major override bumps for `fast-uri` 4 / `undici` 8 / `diff` 9 to avoid breaking the vsce/ovsx toolchain.
+
 ## [0.3.6](https://github.com/shuuul/bioviewer/compare/v0.3.5...v0.3.6) (2026-09-03)
 
 - ci: upgrade GitHub Actions to Node 24 runtimes (`actions/checkout@v7`, `actions/setup-node@v7`, `softprops/action-gh-release@v3`).
