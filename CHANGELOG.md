@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [Unreleased]
+
+- chore(deps): `npm update` refreshes in-range dependencies (`react`/`react-dom` 19.2.8 → 19.3.0, `esbuild` 0.28.1 → 0.28.2, `eslint` 10.8.0 → 10.11.0, `@types/node` 24.13.6 → 24.19.0) and removes nested duplicate packages via dedupe.
+- chore(deps): refresh security override pins within their major lines (`undici` 7.29.1 → 7.30.0, `serialize-javascript` 7.1.1 → 7.1.2); npm audit reports 0 vulnerabilities.
+- chore: deny the new transitive `keytar@7.9.0` install script in `allowScripts` (only the vsce/ovsx keychain path uses it; CI publishes with PATs).
+- chore: skip cross-major bumps for `fast-uri` 4 / `undici` 8 / `diff` 9 overrides, keep `@types/vscode` at 1.125.0 and `@types/node` on 24.x (matches the Node 24 runtime and Cursor 1.128.0 host API).
+
 ## [0.3.7](https://github.com/shuuul/bioviewer/compare/v0.3.6...v0.3.7) (2026-09-22)
 
 - chore(deps): bump `@vscode/vsce` to `^4.0.0` and refresh security override pins to latest (`brace-expansion` `5.0.12`, `path-to-regexp` `8.4.2`, `fast-xml-parser` `5.11.1`, `fast-uri` `3.1.8`, `undici` `7.29.1`, `serialize-javascript` `7.1.1`); npm audit reports 0 vulnerabilities.
