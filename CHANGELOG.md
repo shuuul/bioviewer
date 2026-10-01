@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [Unreleased]
 
+- chore(deps): bump `molstar` from `^5.11.0` to `^5.12.0`; brings case-insensitive mmCIF field lookup (fixes structures whose `_atom_site.cartn_x`-style fields previously resolved to zero coordinates), PDB altloc atom-name fixes, and MRC/CCP4 writer corrections.
+- chore(deps): bump `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` from `^8.66.0` to `^8.71.0`.
 - chore(deps): `npm update` refreshes in-range dependencies (`react`/`react-dom` 19.2.8 → 19.3.0, `esbuild` 0.28.1 → 0.28.2, `eslint` 10.8.0 → 10.11.0, `@types/node` 24.13.6 → 24.19.0) and removes nested duplicate packages via dedupe.
 - chore(deps): refresh security override pins within their major lines (`undici` 7.29.1 → 7.30.0, `serialize-javascript` 7.1.1 → 7.1.2); npm audit reports 0 vulnerabilities.
 - chore: deny the new transitive `keytar@7.9.0` install script in `allowScripts` (only the vsce/ovsx keychain path uses it; CI publishes with PATs).
