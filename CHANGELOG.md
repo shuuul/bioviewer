@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## [Unreleased]
+## [0.3.8](https://github.com/shuuul/bioviewer/compare/v0.3.7...v0.3.8) (2026-10-01)
 
 - chore(deps): bump `molstar` from `^5.11.0` to `^5.12.0`; brings case-insensitive mmCIF field lookup (fixes structures whose `_atom_site.cartn_x`-style fields previously resolved to zero coordinates), PDB altloc atom-name fixes, and MRC/CCP4 writer corrections.
 - chore(deps): bump `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` from `^8.66.0` to `^8.71.0`.
