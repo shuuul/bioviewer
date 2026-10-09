@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## [Unreleased]
+## [0.3.9](https://github.com/shuuul/bioviewer/compare/v0.3.8...v0.3.9) (2026-10-09)
 
 - chore(deps): bump `molstar` from `^5.12.0` to `^5.13.1`; brings BinaryCIF masked-field fixes (masked `int`/`float` values now return the default `0`, matching text/mmCIF parsers), PDB polymer entity fixes for structures with protein caps listed in SEQRES, faster hover/select via separated marking passes, solid-interior rendering for surface representations, and packed-depth outline/occlusion fixes.
 - chore(deps): bump `eslint` from `^10.8.0` to `^10.12.0`, `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` from `^8.71.0` to `^8.71.1`, and `@types/node` from `^24.10.13` to `^24.19.1`.
