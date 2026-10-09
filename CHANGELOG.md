@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [Unreleased]
+
+- chore(deps): bump `molstar` from `^5.12.0` to `^5.13.1`; brings BinaryCIF masked-field fixes (masked `int`/`float` values now return the default `0`, matching text/mmCIF parsers), PDB polymer entity fixes for structures with protein caps listed in SEQRES, faster hover/select via separated marking passes, solid-interior rendering for surface representations, and packed-depth outline/occlusion fixes.
+- chore(deps): bump `eslint` from `^10.8.0` to `^10.12.0`, `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` from `^8.71.0` to `^8.71.1`, and `@types/node` from `^24.10.13` to `^24.19.1`.
+- chore(deps): bump transitive `js-yaml` from 4.3.1 to 4.3.2, clearing the critical `shell-quote` command-injection advisory (`npm audit fix`); supersedes Dependabot PR #22.
+- chore(deps): keep `@types/vscode` at `1.125.0` (highest published types below the Cursor 1.128.0 host API; published versions jump from 1.125.0 to 1.134.0) and `@types/node` on 24.x (matches the Node 24 runtime); npm audit reports 6 high findings in the `braces` chain (`ovsx` → `@vscode/vsce` → `secretlint` → `globby` → `micromatch`), which affects all `braces` versions with no fix released — build-time only, not shipped in the VSIX.
+
 ## [0.3.8](https://github.com/shuuul/bioviewer/compare/v0.3.7...v0.3.8) (2026-10-01)
 
 - chore(deps): bump `molstar` from `^5.11.0` to `^5.12.0`; brings case-insensitive mmCIF field lookup (fixes structures whose `_atom_site.cartn_x`-style fields previously resolved to zero coordinates), PDB altloc atom-name fixes, and MRC/CCP4 writer corrections.

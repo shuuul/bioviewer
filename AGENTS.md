@@ -118,7 +118,7 @@ This file provides guidance to coding agents when working with code in this repo
 **React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
 - React app mounts UI shell and uses a hook to manage viewer lifecycle and extension messaging
 - UI overlay is split into reusable components (`components/ViewerOverlay.tsx`)
-- Mol* viewer v5.11.0 initialization and load queue logic live in services (`services/molstarController.ts`)
+- Mol* viewer v5.13.1 initialization and load queue logic live in services (`services/molstarController.ts`)
 - Blob URL management and gzip decompression happen in the webview service layer
 
 ### Data Flow Architecture
