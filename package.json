@@ -141,13 +141,11 @@
   },
   "overrides": {
     "brace-expansion": "5.0.12",
-    "handlebars": "4.7.9",
     "path-to-regexp": "8.4.2",
-    "fast-xml-parser": "5.11.1",
-    "fast-uri": "3.1.8",
-    "undici": "7.30.0",
+    "fast-xml-parser": "5.11.2",
     "diff": "8.0.4",
-    "serialize-javascript": "7.1.2"
+    "serialize-javascript": "7.1.4",
+    "@azure/msal-node": "7.1.1"
   },
   "galleryBanner": {
     "color": "#C80000",
