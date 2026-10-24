@@ -218,13 +218,16 @@ export class MolstarController {
     }
   }
 
-  private base64ToUint8Array(base64Data: string): Uint8Array {
-    return Uint8Array.from(atob(base64Data), (char) => char.charCodeAt(0));
+  private async base64ToUint8Array(
+    base64Data: string,
+  ): Promise<Uint8Array<ArrayBuffer>> {
+    const response = await fetch(`data:application/octet-stream;base64,${base64Data}`);
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   private async decompressGzip(
     compressedData: Uint8Array,
-  ): Promise<Uint8Array> {
+  ): Promise<Uint8Array<ArrayBuffer>> {
     if (typeof DecompressionStream === "undefined") {
       throw new Error("This browser does not support gzip decompression.");
     }
@@ -245,18 +248,26 @@ export class MolstarController {
     return new Uint8Array(decompressedArrayBuffer);
   }
 
+  private async decodeToBytes(
+    data: string,
+    isCompressed: boolean,
+  ): Promise<Uint8Array<ArrayBuffer>> {
+    const bytes = await this.base64ToUint8Array(data);
+    if (isCompressed) {
+      this.emitDebug("decompressing gzip content in webview");
+      return this.decompressGzip(bytes);
+    }
+
+    return bytes;
+  }
+
   private async createBinaryBlob(
     data: string,
     isCompressed: boolean,
     mimeType: string,
   ): Promise<Blob> {
-    let finalData = this.base64ToUint8Array(data);
-    if (isCompressed) {
-      this.emitDebug("decompressing gzip content in webview");
-      finalData = await this.decompressGzip(finalData);
-    }
-
-    return new Blob([finalData.slice().buffer], { type: mimeType });
+    const bytes = await this.decodeToBytes(data, isCompressed);
+    return new Blob([bytes], { type: mimeType });
   }
 
   private async decodeFileText(
@@ -272,13 +283,7 @@ export class MolstarController {
       return data;
     }
 
-    let bytes = this.base64ToUint8Array(data);
-    if (isCompressed) {
-      this.emitDebug("decompressing gzip content in webview");
-      bytes = await this.decompressGzip(bytes);
-    }
-
-    return new TextDecoder().decode(bytes);
+    return new TextDecoder().decode(await this.decodeToBytes(data, isCompressed));
   }
 
   private async loadStructure(
@@ -313,7 +318,6 @@ export class MolstarController {
       this.emitError(
         `Failed to load structure ${message.label}: ${getErrorMessage(error)}`,
       );
-      throw error;
     } finally {
       if (blobUrl) {
         URL.revokeObjectURL(blobUrl);
@@ -368,7 +372,6 @@ export class MolstarController {
       this.emitError(
         `Failed to load volume ${message.label}: ${getErrorMessage(error)}`,
       );
-      throw error;
     } finally {
       if (blobUrl) {
         URL.revokeObjectURL(blobUrl);
@@ -404,7 +407,6 @@ export class MolstarController {
       this.emitError(
         `Failed to load markers ${message.label}: ${getErrorMessage(error)}`,
       );
-      throw error;
     }
   }
 
