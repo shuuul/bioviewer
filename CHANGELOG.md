@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file. See [commit
 - perf: faster file decoding in the webview (native base64 decoding, one fewer full-buffer copy) — most noticeable for large MRC/CCP4 maps.
 - docs: document that files larger than 50 MB are only noted in the BioViewer output log; loading proceeds without a confirmation dialog.
 
+- chore: resize the extension icon from 2245×2245 to 1024×1024 pixels; the VS Marketplace now rejects icons above the 1024×1024 limit, which blocked the marketplace publish.
+
 ## [0.3.9](https://github.com/shuuul/bioviewer/compare/v0.3.8...v0.3.9) (2026-10-09)
 
 - chore(deps): bump `molstar` from `^5.12.0` to `^5.13.1`; brings BinaryCIF masked-field fixes (masked `int`/`float` values now return the default `0`, matching text/mmCIF parsers), PDB polymer entity fixes for structures with protein caps listed in SEQRES, faster hover/select via separated marking passes, solid-interior rendering for surface representations, and packed-depth outline/occlusion fixes.
