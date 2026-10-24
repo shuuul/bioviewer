@@ -43,6 +43,9 @@ export class BioViewerPanel {
   /** Cached HTML template content (read once at module load) */
   private static _cachedHtmlContent: string | null = null;
 
+  /** Maximum time to wait for the webview to report ready */
+  private static readonly READY_TIMEOUT_MS = 30000;
+
   /**
    * Gets the ready state of the panel (for testing)
    * @returns True if the webview is ready to receive messages
@@ -135,7 +138,6 @@ export class BioViewerPanel {
           case "ready":
             BioViewerPanel._outputChannel.appendLine(`webview is ready`);
             this._handleReady();
-            BioViewerPanel.currentPanel = this;
             break;
 
           case "error":
@@ -179,14 +181,33 @@ export class BioViewerPanel {
   }
 
   /**
-   * Waits for the webview to be ready before proceeding
-   * @returns Promise that resolves when webview is ready
+   * Waits for the webview to be ready before proceeding.
+   * Fails loudly instead of hanging forever when the webview never boots.
    */
   public async waitForReady(): Promise<void> {
     if (this._isReady) {
-      return Promise.resolve();
+      return;
     }
-    return this._readyPromise;
+
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const readyTimeout = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(
+          new Error(
+            `webview did not report ready within ${BioViewerPanel.READY_TIMEOUT_MS / 1000}s`,
+          ),
+        );
+      }, BioViewerPanel.READY_TIMEOUT_MS);
+    });
+
+    try {
+      await Promise.race([this._readyPromise, readyTimeout]);
+    } catch (error) {
+      BioViewerPanel._outputChannel.appendLine(`Error: ${error}`);
+      throw error;
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
   }
 
   /**
@@ -218,6 +239,7 @@ export class BioViewerPanel {
     });
 
     const instance = new BioViewerPanel(panel, extensionUri);
+    BioViewerPanel.currentPanel = instance;
     BioViewerPanel._outputChannel.appendLine(
       `panel created in ${Date.now() - startTime}ms`,
     );
