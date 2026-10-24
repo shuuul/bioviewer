@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.4.0](https://github.com/shuuul/bioviewer/compare/v0.3.9...v0.4.0) (2026-10-25)
+
+- fix: stop duplicate error dialogs when a queued file fails to load in the webview (the failure was reported once by the loader and again by the loading queue).
+- fix: fail with an error after 30 seconds when the webview never reports ready, instead of leaving `Open Files` / `Open Folder` / `Add Files` / `Add Folder` / database loading hanging forever with no feedback.
+- fix: `Add Files to Current Tab` / `Add Folder to Current Tab` now target the most recently created viewer tab instead of whichever panel happened to report ready last when several tabs are opened in quick succession.
+- feat: `Open Folder` / `Add Folder` scan subdirectories recursively and also work for folders outside the workspace; hidden directories (dot-prefixed), `node_modules`, and symlinks are skipped.
+- perf: faster file decoding in the webview (native base64 decoding, one fewer full-buffer copy) — most noticeable for large MRC/CCP4 maps.
+- docs: document that files larger than 50 MB are only noted in the BioViewer output log; loading proceeds without a confirmation dialog.
+
 ## [0.3.9](https://github.com/shuuul/bioviewer/compare/v0.3.8...v0.3.9) (2026-10-09)
 
 - chore(deps): bump `molstar` from `^5.12.0` to `^5.13.1`; brings BinaryCIF masked-field fixes (masked `int`/`float` values now return the default `0`, matching text/mmCIF parsers), PDB polymer entity fixes for structures with protein caps listed in SEQRES, faster hover/select via separated marking passes, solid-interior rendering for surface representations, and packed-depth outline/occlusion fixes.

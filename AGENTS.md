@@ -111,8 +111,8 @@ This file provides guidance to coding agents when working with code in this repo
 
 **Command Modules (`src/commands/*.ts`)**
 - `databaseCommands.ts`: database picker + accession prompt + `loadPdb/loadAlphaFoldDb/loadEmdb`
-- `fileCommands.ts`: open/add files/folders, panel selection, file reading, and command dispatch
-- `fileTypes.ts`: supported extension list, open dialog filters, folder glob pattern, file format/command mapping
+- `fileCommands.ts`: open/add files/folders (recursive folder scan via `vscode.workspace.fs.readDirectory`), panel selection, file reading, and command dispatch
+- `fileTypes.ts`: supported extension list, open dialog filters, supported-filename matching, file format/command mapping
 - `types.ts`: shared command argument typings
 
 **React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
@@ -131,14 +131,13 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### File Format Handling
 
-**Structure Files**: Read as UTF-8 text, passed directly to Mol* with filename-based labeling
-**Volume/Map Files**: Read as binary, converted to base64, then loaded via blob URLs in the webview
+**Structure and Volume/Map Files**: Read as binary, converted to base64, then loaded via blob URLs in the webview with filename-based labeling
 **Compressed Files (.gz)**: Automatically detected and decompressed in browser for bandwidth efficiency
 **Database Loading**: Direct API calls to PDB, AlphaFold, and EMDB through Mol* viewer methods
 
 ### Memory Management Strategy
 
-- File size detection with user warnings for files >50MB
+- File size logging for files >50MB (loading proceeds without a confirmation dialog)
 - Blob URL usage instead of data URLs for better memory efficiency
 - Browser-side gzip decompression for minimal network transfer (ideal for remote SSH scenarios)
 - Automatic cleanup of blob URLs after successful loading
