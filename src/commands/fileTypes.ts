@@ -22,10 +22,13 @@ export interface FileLoadConfig {
   command: FileLoadCommand;
 }
 
-export function buildSearchPattern(relativePath: string): string {
-  const gzExtensions = SUPPORTED_EXTENSIONS.map((extension) => `${extension}.gz`);
-  const allExtensions = [...SUPPORTED_EXTENSIONS, ...gzExtensions];
-  return `${relativePath}/*.{${allExtensions.join(",")}}`;
+export function isSupportedFileName(fileName: string): boolean {
+  const lowerName = fileName.toLowerCase();
+  return SUPPORTED_EXTENSIONS.some(
+    (extension) =>
+      lowerName.endsWith(`.${extension}`) ||
+      lowerName.endsWith(`.${extension}.gz`),
+  );
 }
 
 export function buildFileFilters(): Record<string, string[]> {

@@ -1,5 +1,8 @@
 import * as assert from "assert";
+import * as os from "os";
+import * as path from "path";
 import * as vscode from "vscode";
+import { findSupportedFolderFiles } from "../../commands/fileCommands";
 import {
     EXAMPLES_PATH,
     ensureExtensionActivated,
@@ -99,5 +102,31 @@ suite("BioViewer Extension Test Suite", () => {
         await assert.doesNotReject(async () => {
             await vscode.commands.executeCommand("bioviewer.openFolder", vscode.Uri.file(EXAMPLES_PATH));
         });
+    });
+
+    test("Should find supported files in nested folders recursively", async function(this: Mocha.Context) {
+        this.timeout(timeout);
+
+        const root = vscode.Uri.file(path.join(os.tmpdir(), `bioviewer-folder-test-${Date.now()}`));
+        await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(root, "nested", "deeper"));
+        await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(root, ".hidden"));
+        await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(root, "node_modules"));
+
+        const writeFile = (relative: string, contents = "x") =>
+            vscode.workspace.fs.writeFile(vscode.Uri.joinPath(root, relative), Buffer.from(contents));
+        await writeFile("a.pdb", "ATOM");
+        await writeFile("skip.txt");
+        await writeFile("nested/b.cif.gz");
+        await writeFile("nested/deeper/c.mrc");
+        await writeFile(".hidden/d.pdb");
+        await writeFile("node_modules/e.pdb");
+
+        try {
+            const found = await findSupportedFolderFiles(root);
+            const names = found.map((uri) => path.basename(uri.fsPath));
+            assert.deepStrictEqual(names, ["a.pdb", "b.cif.gz", "c.mrc"]);
+        } finally {
+            await vscode.workspace.fs.delete(root, { recursive: true });
+        }
     });
 });

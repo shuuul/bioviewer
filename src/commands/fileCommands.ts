@@ -3,8 +3,8 @@ import * as vscode from "vscode";
 import { BioViewerPanel } from "../panels/BioViewerPanel";
 import {
   buildFileFilters,
-  buildSearchPattern,
   getFileConfig,
+  isSupportedFileName,
 } from "./fileTypes";
 import type { FileCommandArg } from "./types";
 
@@ -27,13 +27,35 @@ function resolveCommandFiles(
   return [];
 }
 
-function getRelativeFolderPattern(folderUri: vscode.Uri): string {
-  const workspaceRoot =
-    vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? "";
-  return (
-    vscode.workspace.asRelativePath(folderUri) ||
-    path.relative(workspaceRoot, folderUri.fsPath)
-  );
+/** Directory names never scanned when loading a folder recursively */
+const SKIPPED_FOLDER_NAMES = new Set(["node_modules"]);
+
+export async function findSupportedFolderFiles(
+  folderUri: vscode.Uri,
+): Promise<vscode.Uri[]> {
+  const files: vscode.Uri[] = [];
+  await collectSupportedFiles(folderUri, files);
+  return files.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+}
+
+async function collectSupportedFiles(
+  folderUri: vscode.Uri,
+  files: vscode.Uri[],
+): Promise<void> {
+  const entries = await vscode.workspace.fs.readDirectory(folderUri);
+
+  for (const [name, fileType] of entries) {
+    // Only plain directories and files are followed; symlinks report
+    // FileType.SymbolicLink, which keeps directory cycles out of the walk.
+    if (fileType === vscode.FileType.Directory) {
+      if (name.startsWith(".") || SKIPPED_FOLDER_NAMES.has(name)) {
+        continue;
+      }
+      await collectSupportedFiles(vscode.Uri.joinPath(folderUri, name), files);
+    } else if (fileType === vscode.FileType.File && isSupportedFileName(name)) {
+      files.push(vscode.Uri.joinPath(folderUri, name));
+    }
+  }
 }
 
 async function selectFiles(
@@ -59,14 +81,6 @@ async function selectFiles(
   }
 
   return result || [];
-}
-
-async function findSupportedFolderFiles(
-  folderUri: vscode.Uri,
-): Promise<vscode.Uri[]> {
-  const relativePath = getRelativeFolderPattern(folderUri);
-  const searchPattern = buildSearchPattern(relativePath);
-  return vscode.workspace.findFiles(searchPattern);
 }
 
 async function getOrCreateCurrentPanel(
