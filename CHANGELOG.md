@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## Unreleased
+## [0.4.1](https://github.com/shuuul/bioviewer/compare/v0.4.0...v0.4.1) (2026-10-25)
 
 - fix: clean up closed viewer tabs, reject pending loads and readiness waits on disposal, and target the focused surviving viewer when adding files.
 - fix: select the native MOL, MOL2, and PDBQT parsers and correctly open gzip files with uppercase extensions such as `.PDB.GZ`.
