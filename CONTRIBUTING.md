@@ -20,6 +20,8 @@ We welcome contributions and aim to keep the process simple and predictable.
    - `npm run test`
 6. Open a pull request with a clear summary.
 
+CI runs the build, type checks, lint, and VS Code integration tests on pull requests and pushes to `master`. File-loading tests wait for Mol* to finish and report failures back to the extension; keep assertions for parsing failures as well as successful loads. Linux CI runs VS Code under Xvfb with software rendering.
+
 ## Pull Request Process
 
 1. Keep changes focused and scoped to one goal.

@@ -30,6 +30,15 @@ export class BioViewerPanel {
 
   /** Resolver function for the ready promise */
   private _resolveReady: (() => void) | undefined;
+  private _rejectReady: ((error: Error) => void) | undefined;
+  private static readonly _panels = new Set<BioViewerPanel>();
+  private _nextRequestId = 0;
+  private readonly _pendingLoads = new Map<string, {
+    resolve: () => void;
+    reject: (error: Error) => void;
+    timeout: NodeJS.Timeout;
+  }>();
+  private static readonly LOAD_TIMEOUT_MS = 300000;
 
   /** Flag indicating if the webview is ready */
   private _isReady: boolean = false;
@@ -79,7 +88,6 @@ export class BioViewerPanel {
     this._panel.onDidDispose(
       () => {
         BioViewerPanel._outputChannel.appendLine(`disposing panel`);
-        this._isDisposed = true;
         this.dispose();
       },
       null,
@@ -87,9 +95,19 @@ export class BioViewerPanel {
     );
 
     // Initialize ready promise for synchronizing webview readiness
-    this._readyPromise = new Promise((resolve) => {
+    this._readyPromise = new Promise((resolve, reject) => {
       this._resolveReady = resolve;
+      this._rejectReady = reject;
     });
+    // Disposal can precede the first readiness waiter.
+    void this._readyPromise.catch(() => {});
+    this._panel.onDidChangeViewState(({ webviewPanel }) => {
+      if (webviewPanel.active && !this._isDisposed) {
+        BioViewerPanel._panels.delete(this);
+        BioViewerPanel._panels.add(this);
+        BioViewerPanel.currentPanel = this;
+      }
+    }, null, this._disposables);
 
     // Set up message handling from webview
     this._setupMessageHandling();
@@ -135,13 +153,27 @@ export class BioViewerPanel {
         }
 
         switch (rawMessage.command) {
+          case "loadResult": {
+            const pending = this._pendingLoads.get(rawMessage.requestId);
+            if (!pending) {
+              break;
+            }
+            clearTimeout(pending.timeout);
+            this._pendingLoads.delete(rawMessage.requestId);
+            this._isLoading = this._pendingLoads.size > 0;
+            if (rawMessage.success) {
+              pending.resolve();
+            } else {
+              pending.reject(new Error(rawMessage.error));
+            }
+            break;
+          }
           case "ready":
             BioViewerPanel._outputChannel.appendLine(`webview is ready`);
             this._handleReady();
             break;
 
           case "error":
-            this._isLoading = false;
             BioViewerPanel._outputChannel.appendLine(
               `Error from webview: ${rawMessage.error}`,
             );
@@ -149,7 +181,6 @@ export class BioViewerPanel {
             break;
 
           case "info":
-            this._isLoading = false;
             BioViewerPanel._outputChannel.appendLine(
               `info from webview: ${rawMessage.info}`,
             );
@@ -185,6 +216,9 @@ export class BioViewerPanel {
    * Fails loudly instead of hanging forever when the webview never boots.
    */
   public async waitForReady(): Promise<void> {
+    if (this._isDisposed) {
+      throw new Error("Viewer panel was closed.");
+    }
     if (this._isReady) {
       return;
     }
@@ -238,7 +272,14 @@ export class BioViewerPanel {
       ],
     });
 
-    const instance = new BioViewerPanel(panel, extensionUri);
+    let instance: BioViewerPanel;
+    try {
+      instance = new BioViewerPanel(panel, extensionUri);
+    } catch (error) {
+      panel.dispose();
+      throw error;
+    }
+    BioViewerPanel._panels.add(instance);
     BioViewerPanel.currentPanel = instance;
     BioViewerPanel._outputChannel.appendLine(
       `panel created in ${Date.now() - startTime}ms`,
@@ -259,37 +300,44 @@ export class BioViewerPanel {
    * @param command - The command to execute in the webview
    * @param params - Parameters for the command
    */
-  public loadContent(
+  public async loadContent(
     command: ExtensionCommand,
     params: Record<string, unknown>,
-  ): void {
-    BioViewerPanel._outputChannel.appendLine(`command: ${command}`);
-    // Log parameters without the data content to avoid spam
-    const logParams: Record<string, unknown> = { ...params };
-    if (typeof logParams.data === "string") {
-      const contentType = logParams.isBinary === true ? "binary" : "text";
-      logParams.data = `[${contentType} content: ${logParams.data.length} chars]`;
+  ): Promise<void> {
+    await this.waitForReady();
+    if (this._isDisposed) {
+      throw new Error("Viewer panel was closed.");
     }
-    BioViewerPanel._outputChannel.appendLine(
-      `params: ${JSON.stringify(logParams)}`,
-    );
-
-    if (!this._isReady) {
-      BioViewerPanel._outputChannel.appendLine(
-        `Warning: webview may not be ready yet`,
-      );
-    }
-
-    try {
+    const requestId = String(++this._nextRequestId);
+    BioViewerPanel._outputChannel.appendLine(`loading request ${requestId}: ${command}`);
+    return new Promise<void>((resolve, reject) => {
+      const fail = (error: Error): void => {
+        const pending = this._pendingLoads.get(requestId);
+        if (!pending) {
+          return;
+        }
+        clearTimeout(pending.timeout);
+        this._pendingLoads.delete(requestId);
+        this._isLoading = this._pendingLoads.size > 0;
+        reject(error);
+      };
+      const timeout = setTimeout(() => {
+        fail(new Error(`Loading did not complete within ${BioViewerPanel.LOAD_TIMEOUT_MS / 1000}s.`));
+      }, BioViewerPanel.LOAD_TIMEOUT_MS);
+      this._pendingLoads.set(requestId, { resolve, reject, timeout });
       this._isLoading = true;
-      this._panel.webview.postMessage({ command, ...params });
-    } catch (error) {
-      this._isLoading = false;
-      const errorMsg = `Failed to send message to webview: ${error}`;
-      BioViewerPanel._outputChannel.appendLine(`Error: ${errorMsg}`);
-      vscode.window.showErrorMessage(`BioViewer: ${errorMsg}`);
-      throw error;
-    }
+      try {
+        void Promise.resolve(this._panel.webview.postMessage({ ...params, command, requestId }))
+          .then((delivered) => {
+            if (!delivered) {
+              fail(new Error("Failed to deliver loading request to the viewer."));
+            }
+          })
+          .catch((error: unknown) => fail(error instanceof Error ? error : new Error(String(error))));
+      } catch (error) {
+        fail(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
   }
 
   /**
@@ -301,10 +349,22 @@ export class BioViewerPanel {
     }
 
     this._isDisposed = true;
+    this._isReady = false;
+    const error = new Error("Viewer panel was closed.");
+    this._rejectReady?.(error);
+    this._rejectReady = undefined;
+    this._resolveReady = undefined;
+    for (const pending of this._pendingLoads.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(error);
+    }
+    this._pendingLoads.clear();
+    this._isLoading = false;
+    BioViewerPanel._panels.delete(this);
 
     // Clear the current panel reference if this is the current panel
     if (BioViewerPanel.currentPanel === this) {
-      BioViewerPanel.currentPanel = undefined;
+      BioViewerPanel.currentPanel = [...BioViewerPanel._panels].pop();
     }
 
     // Clean up all disposables first (to avoid circular disposal)

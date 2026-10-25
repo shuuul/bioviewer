@@ -42,9 +42,9 @@ export function buildFileFilters(): Record<string, string[]> {
 }
 
 export function getFileConfig(extension: string): FileLoadConfig | null {
-  let actualExtension = extension;
-  if (extension.endsWith(".gz")) {
-    actualExtension = extension.slice(0, -3);
+  let actualExtension = extension.toLowerCase();
+  if (actualExtension.endsWith(".gz")) {
+    actualExtension = actualExtension.slice(0, -3);
   }
 
   if ([".pdb", ".ent"].includes(actualExtension)) {
@@ -59,8 +59,12 @@ export function getFileConfig(extension: string): FileLoadConfig | null {
     return { format: "ccp4", command: "loadVolume" };
   }
 
-  if ([".sdf", ".sd", ".mol", ".mol2", ".pdbqt"].includes(actualExtension)) {
+  if ([".sdf", ".sd"].includes(actualExtension)) {
     return { format: "sdf", command: "loadStructure" };
+  }
+
+  if ([".mol", ".mol2", ".pdbqt"].includes(actualExtension)) {
+    return { format: actualExtension.slice(1), command: "loadStructure" };
   }
 
   if ([".cmm"].includes(actualExtension)) {

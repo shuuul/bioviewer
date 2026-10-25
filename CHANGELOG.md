@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## Unreleased
+
+- fix: clean up closed viewer tabs, reject pending loads and readiness waits on disposal, and target the focused surviving viewer when adding files.
+- fix: select the native MOL, MOL2, and PDBQT parsers and correctly open gzip files with uppercase extensions such as `.PDB.GZ`.
+- fix: wait for Mol* to finish loading before commands succeed; reject failed or undelivered loads and report actual batch success/failure counts without duplicate error dialogs.
+- fix: trim pasted database identifiers before loading.
+- test: verify actual viewer loading, parsing failures, gzip handling, native small molecule formats, and panel lifecycle; run build and integration tests on pushes and pull requests.
+
 ## [0.4.0](https://github.com/shuuul/bioviewer/compare/v0.3.9...v0.4.0) (2026-10-25)
 
 - fix: stop duplicate error dialogs when a queued file fails to load in the webview (the failure was reported once by the loader and again by the loading queue).

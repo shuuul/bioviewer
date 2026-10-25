@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { BioViewerPanel } from "../../panels/BioViewerPanel";
 
 const EXTENSION_ID = "shuuul.bioviewer";
 const POLL_INTERVAL_MS = 50;
@@ -43,28 +42,13 @@ export async function ensureExtensionActivated(): Promise<void> {
 export async function closeAllEditors(): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   await waitFor(
-    () => vscode.window.visibleTextEditors.length === 0,
+    () => vscode.window.tabGroups.all.every((group) => group.tabs.length === 0),
     3000,
     "Timed out waiting for editors to close."
   );
 }
 
-export async function disposeCurrentPanel(): Promise<void> {
-  const panel = BioViewerPanel.getCurrentPanel();
-  if (!panel) {
-    return;
-  }
-
-  panel.dispose();
-  await waitFor(
-    () => BioViewerPanel.getCurrentPanel() === undefined,
-    3000,
-    "Timed out waiting for BioViewer panel disposal."
-  );
-}
-
 export async function resetUiState(): Promise<void> {
-  await disposeCurrentPanel();
   await closeAllEditors();
 }
 

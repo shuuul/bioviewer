@@ -83,10 +83,10 @@ async function selectFiles(
   return result || [];
 }
 
-async function getOrCreateCurrentPanel(
+function getOrCreateCurrentPanel(
   context: vscode.ExtensionContext,
   outputChannel: vscode.OutputChannel,
-): Promise<BioViewerPanel> {
+): BioViewerPanel {
   let panel = BioViewerPanel.getCurrentPanel();
   if (!panel) {
     outputChannel.appendLine("No active panel found, creating new panel");
@@ -95,8 +95,6 @@ async function getOrCreateCurrentPanel(
       "BioViewer",
       outputChannel,
     );
-    await panel.waitForReady();
-    outputChannel.appendLine("New panel created and ready");
     return panel;
   }
 
@@ -114,7 +112,7 @@ async function loadFile(
   const isCompressed = fileExtension === ".gz";
 
   if (fileExtension === ".gz") {
-    const baseName = path.basename(fileUri.fsPath, ".gz");
+    const baseName = fileName.slice(0, -3);
     const innerExtension = path.extname(baseName).toLowerCase();
     if (innerExtension) {
       fileExtension = `${innerExtension}.gz`;
@@ -128,48 +126,67 @@ async function loadFile(
   const fileConfig = getFileConfig(fileExtension);
   if (!fileConfig) {
     const errorMessage = `Unsupported file format: ${fileExtension}`;
-    outputChannel.appendLine(errorMessage);
-    vscode.window.showErrorMessage(`BioViewer: ${errorMessage}`);
-    return;
+    throw new Error(errorMessage);
   }
 
-  try {
-    const fileStats = await vscode.workspace.fs.stat(fileUri);
-    const fileSizeBytes = fileStats.size;
-    const fileSizeMB = fileSizeBytes / (1024 * 1024);
+  const fileStats = await vscode.workspace.fs.stat(fileUri);
+  const fileSizeBytes = fileStats.size;
+  const fileSizeMB = fileSizeBytes / (1024 * 1024);
 
-    outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
-    if (fileSizeMB > 50) {
-      outputChannel.appendLine(
-        `Loading large file: ${fileName} (${fileSizeMB.toFixed(2)} MB)`,
-      );
-    }
-
-    const fileContent = await vscode.workspace.fs.readFile(fileUri);
-    const data = Buffer.from(fileContent).toString("base64");
-
-    let label = path.basename(fileUri.fsPath, path.extname(fileUri.fsPath));
-    if (isCompressed) {
-      label = path.basename(label, path.extname(label));
-    }
-
-    const loadParams = {
-      data,
-      format: fileConfig.format,
-      isBinary: true,
-      isCompressed,
-      label,
-    };
-
+  outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
+  if (fileSizeMB > 50) {
     outputChannel.appendLine(
-      `Loading with command: ${fileConfig.command}, format: ${fileConfig.format}, compressed: ${isCompressed}`,
+      `Loading large file: ${fileName} (${fileSizeMB.toFixed(2)} MB)`,
     );
-    panel.loadContent(fileConfig.command, loadParams);
-    outputChannel.appendLine(`Successfully queued loading of: ${fileName}`);
-  } catch (error) {
-    const errorMessage = `failed to load file: ${fileName}`;
-    outputChannel.appendLine(`Error: ${errorMessage} - ${error}`);
-    vscode.window.showErrorMessage(`BioViewer: ${errorMessage}`);
+  }
+
+  const fileContent = await vscode.workspace.fs.readFile(fileUri);
+  const data = Buffer.from(fileContent).toString("base64");
+
+  let label = path.basename(fileUri.fsPath, path.extname(fileUri.fsPath));
+  if (isCompressed) {
+    label = path.basename(label, path.extname(label));
+  }
+
+  const loadParams = {
+    data,
+    format: fileConfig.format,
+    isBinary: true,
+    isCompressed,
+    label,
+  };
+
+  outputChannel.appendLine(
+    `Loading with command: ${fileConfig.command}, format: ${fileConfig.format}, compressed: ${isCompressed}`,
+  );
+  await panel.loadContent(fileConfig.command, loadParams);
+  outputChannel.appendLine(`file loaded: ${fileName}`);
+}
+
+async function loadFiles(
+  panel: BioViewerPanel,
+  files: vscode.Uri[],
+  outputChannel: vscode.OutputChannel,
+): Promise<void> {
+  const failures: string[] = [];
+  for (const file of files) {
+    try {
+      await loadFile(panel, file, outputChannel);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      const message = `${path.basename(file.fsPath)}: ${reason}`;
+      failures.push(message);
+      outputChannel.appendLine(`Error: failed to load ${message}`);
+    }
+  }
+
+  outputChannel.appendLine(
+    `loaded ${files.length - failures.length} of ${files.length} file(s); ${failures.length} failed`,
+  );
+  if (failures.length > 0) {
+    throw new Error(
+      `Failed to load ${failures.length} of ${files.length} file(s): ${failures.join("; ")}`,
+    );
   }
 }
 
@@ -210,12 +227,7 @@ export async function openFiles(
   await panel.waitForReady();
   outputChannel.appendLine("Panel is ready, loading files...");
 
-  for (const file of filesToOpen) {
-    outputChannel.appendLine(`Loading file: ${path.basename(file.fsPath)}`);
-    await loadFile(panel, file, outputChannel);
-  }
-
-  outputChannel.appendLine(`Successfully loaded ${filesToOpen.length} file(s)`);
+  await loadFiles(panel, filesToOpen, outputChannel);
 }
 
 export async function openFolder(
@@ -252,16 +264,7 @@ export async function openFolder(
   await panel.waitForReady();
   outputChannel.appendLine("Panel is ready, loading folder contents...");
 
-  for (const file of files) {
-    outputChannel.appendLine(
-      `Loading file from folder: ${path.basename(file.fsPath)}`,
-    );
-    await loadFile(panel, file, outputChannel);
-  }
-
-  outputChannel.appendLine(
-    `Successfully loaded ${files.length} files from folder: ${folderName}`,
-  );
+  await loadFiles(panel, files, outputChannel);
 }
 
 export async function addFiles(
@@ -279,20 +282,14 @@ export async function addFiles(
     return;
   }
 
-  const panel = await getOrCreateCurrentPanel(context, outputChannel);
+  const panel = getOrCreateCurrentPanel(context, outputChannel);
 
   await panel.waitForReady();
   outputChannel.appendLine(
     `Adding ${filesToAdd.length} file(s) to current panel`,
   );
 
-  for (const file of filesToAdd) {
-    await loadFile(panel, file, outputChannel);
-  }
-
-  outputChannel.appendLine(
-    `Successfully added ${filesToAdd.length} file(s) to panel`,
-  );
+  await loadFiles(panel, filesToAdd, outputChannel);
 }
 
 export async function addFolderToCurrentPanel(
@@ -321,18 +318,12 @@ export async function addFolderToCurrentPanel(
     `Found ${files.length} supported files in folder: ${folderName}`,
   );
 
-  const panel = await getOrCreateCurrentPanel(context, outputChannel);
+  const panel = getOrCreateCurrentPanel(context, outputChannel);
 
   await panel.waitForReady();
   outputChannel.appendLine(
     `Adding ${files.length} file(s) from folder: ${folderName} to current panel`,
   );
 
-  for (const file of files) {
-    await loadFile(panel, file, outputChannel);
-  }
-
-  outputChannel.appendLine(
-    `Successfully added ${files.length} file(s) from folder: ${folderName} to panel`,
-  );
+  await loadFiles(panel, files, outputChannel);
 }

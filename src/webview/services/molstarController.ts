@@ -68,7 +68,7 @@ function ensureMolstarRuntime(): MolstarGlobal {
 export class MolstarController {
   private readonly viewer: MolstarViewer;
   private readonly report: Reporter;
-  private readonly loadingQueue: Array<() => Promise<void>> = [];
+  private readonly loadingQueue: ExtensionToWebviewMessage[] = [];
   private isProcessingQueue = false;
   private isDisposed = false;
 
@@ -111,6 +111,7 @@ export class MolstarController {
   public dispose(): void {
     this.isDisposed = true;
     this.loadingQueue.length = 0;
+    this.viewer.plugin?.dispose();
   }
 
   public async handleCommand(
@@ -120,76 +121,64 @@ export class MolstarController {
       return;
     }
 
-    switch (message.command) {
-      case "loadPdb":
-        await this.loadPdb(message.accession);
-        break;
-      case "loadAlphaFoldDb":
-        await this.loadAlphaFold(message.accession);
-        break;
-      case "loadEmdb":
-        await this.loadEmdb(message.accession);
-        break;
-      case "loadStructure":
-        this.enqueueTask(() => this.loadStructure(message));
-        break;
-      case "loadVolume":
-        this.enqueueTask(() => this.loadVolume(message));
-        break;
-      case "loadMarkers":
-        this.enqueueTask(() => this.loadMarkers(message));
-        break;
-    }
+    this.loadingQueue.push(message);
+    await this.processQueue();
   }
 
   private emitInfo(info: string): void {
     this.report({ command: "info", info });
   }
 
-  private emitError(error: string): void {
-    this.report({ command: "error", error });
-  }
-
   private emitDebug(message: string): void {
     this.report({ command: "debug", message });
-  }
-
-  private enqueueTask(task: () => Promise<void>): void {
-    this.loadingQueue.push(task);
-    void this.processQueue();
   }
 
   private async processQueue(): Promise<void> {
     if (this.isProcessingQueue || this.isDisposed) {
       return;
     }
-
     this.isProcessingQueue = true;
-
-    while (this.loadingQueue.length > 0 && !this.isDisposed) {
-      const task = this.loadingQueue.shift();
-      if (!task) {
-        continue;
+    try {
+      while (this.loadingQueue.length > 0 && !this.isDisposed) {
+        const message = this.loadingQueue.shift()!;
+        try {
+          switch (message.command) {
+            case "loadPdb": await this.loadPdb(message.accession); break;
+            case "loadAlphaFoldDb": await this.loadAlphaFold(message.accession); break;
+            case "loadEmdb": await this.loadEmdb(message.accession); break;
+            case "loadStructure": await this.loadStructure(message); break;
+            case "loadVolume": await this.loadVolume(message); break;
+            case "loadMarkers": await this.loadMarkers(message); break;
+          }
+          if (!this.isDisposed) {
+            this.report({ command: "loadResult", requestId: message.requestId, success: true });
+          }
+        } catch (error) {
+          if (!this.isDisposed) {
+            this.report({ command: "loadResult", requestId: message.requestId, success: false, error: getErrorMessage(error) });
+          }
+        }
       }
-
-      try {
-        await task();
-      } catch (error) {
-        this.emitError(
-          `Failed to process queued loading task: ${getErrorMessage(error)}`,
-        );
-      }
+    } finally {
+      this.isProcessingQueue = false;
     }
+  }
 
-    this.isProcessingQueue = false;
+  private requireStructure(previousCount: number): void {
+    const structures = this.viewer.plugin?.managers.structure.hierarchy.current.structures;
+    if (!structures || structures.length <= previousCount || !structures[structures.length - 1].cell.obj?.data.elementCount) {
+      throw new Error("Loading produced no molecular structure.");
+    }
   }
 
   private async loadPdb(accession: string): Promise<void> {
     try {
+      const previousCount = this.viewer.plugin?.managers.structure.hierarchy.current.structures.length ?? 0;
       await this.viewer.loadPdb(accession);
+      this.requireStructure(previousCount);
       this.emitInfo(`Loaded PDB: ${accession}`);
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load PDB ${accession}: ${getErrorMessage(error)}`,
       );
     }
@@ -197,10 +186,12 @@ export class MolstarController {
 
   private async loadAlphaFold(accession: string): Promise<void> {
     try {
+      const previousCount = this.viewer.plugin?.managers.structure.hierarchy.current.structures.length ?? 0;
       await this.viewer.loadAlphaFoldDb(accession);
+      this.requireStructure(previousCount);
       this.emitInfo(`Loaded AlphaFoldDB: ${accession}`);
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load AlphaFoldDB ${accession}: ${getErrorMessage(error)}`,
       );
     }
@@ -209,10 +200,12 @@ export class MolstarController {
   private async loadEmdb(accession: string): Promise<void> {
     const emdbId = `emd-${accession}`;
     try {
+      const previousCount = this.viewer.plugin?.managers.volume.hierarchy.current.volumes.length ?? 0;
       await this.viewer.loadEmdb(emdbId);
+      this.requireVolume(previousCount);
       this.emitInfo(`Loaded EMDB: ${emdbId}`);
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load EMDB ${emdbId}: ${getErrorMessage(error)}`,
       );
     }
@@ -307,15 +300,17 @@ export class MolstarController {
         id: message.label,
       };
 
+      const previousCount = this.viewer.plugin?.managers.structure.hierarchy.current.structures.length ?? 0;
       await this.viewer.loadStructureFromUrl(
         blobUrl,
         message.format,
         false,
         structureParams,
       );
+      this.requireStructure(previousCount);
       this.emitInfo(`Loaded structure: ${message.label}`);
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load structure ${message.label}: ${getErrorMessage(error)}`,
       );
     } finally {
@@ -329,8 +324,7 @@ export class MolstarController {
     message: Extract<ExtensionToWebviewMessage, { command: "loadVolume" }>,
   ): Promise<void> {
     if (!this.viewer.loadVolumeFromUrl) {
-      this.emitError("Volume loading is not supported in this Mol* version.");
-      return;
+      throw new Error("Volume loading is not supported in this Mol* version.");
     }
 
     let blobUrl: string | undefined;
@@ -365,11 +359,13 @@ export class MolstarController {
         id: message.label,
       };
 
+      const previousCount = this.viewer.plugin?.managers.volume.hierarchy.current.volumes.length ?? 0;
       await this.viewer.loadVolumeFromUrl(volumeParams, isosurfaces);
+      this.requireVolume(previousCount);
       this.renameLastVolume(message.label);
       this.emitInfo(`Loaded volume: ${message.label}`);
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load volume ${message.label}: ${getErrorMessage(error)}`,
       );
     } finally {
@@ -387,8 +383,7 @@ export class MolstarController {
     }
 
     if (!this.viewer.plugin) {
-      this.emitError("Marker loading is not supported in this Mol* version.");
-      return;
+      throw new Error("Marker loading is not supported in this Mol* version.");
     }
 
     try {
@@ -404,7 +399,7 @@ export class MolstarController {
         `Loaded markers: ${message.label} (${markerSet.markers.length} marker(s), ${markerSet.links.length} link(s))`,
       );
     } catch (error) {
-      this.emitError(
+      throw new Error(
         `Failed to load markers ${message.label}: ${getErrorMessage(error)}`,
       );
     }
@@ -431,13 +426,19 @@ export class MolstarController {
       shape?: { cell?: { obj?: { data?: { label?: string }; label?: string } } };
     }).shape;
     const shapeObject = shape?.cell?.obj;
-    if (shapeObject) {
-      shapeObject.label = label;
-      if (shapeObject.data) {
-        shapeObject.data.label = label;
-      }
+    if (!shapeObject?.data) {
+      throw new Error("Marker loading produced no shape.");
     }
+    shapeObject.label = label;
+    shapeObject.data.label = label;
     await provider.visuals(plugin, parsed);
+  }
+
+  private requireVolume(previousCount: number): void {
+    const volumes = this.viewer.plugin?.managers.volume.hierarchy.current.volumes;
+    if (!volumes || volumes.length <= previousCount || !volumes[volumes.length - 1].cell.obj?.data.grid.cells.data.length) {
+      throw new Error("Loading produced no volume data.");
+    }
   }
 
   private renameLastVolume(label: string): void {

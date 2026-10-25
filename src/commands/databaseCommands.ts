@@ -39,12 +39,12 @@ export async function openFromDatabase(
     throw new Error(`Unknown database selection: ${selection}`);
   }
 
-  const accession = await vscode.window.showInputBox({
+  const accession = (await vscode.window.showInputBox({
     placeHolder: config.placeholder,
     prompt: `Enter the ${selection} identifier`,
-  });
+  }))?.trim();
 
-  if (!accession?.trim()) {
+  if (!accession) {
     outputChannel.appendLine("user cancelled or entered empty accession");
     return;
   }
@@ -60,6 +60,7 @@ export async function openFromDatabase(
   await panel.waitForReady();
   outputChannel.appendLine("Panel is ready");
 
-  panel.loadContent(config.command, { accession });
-  outputChannel.appendLine(`Loading ${selection} structure: ${accession}`);
+  outputChannel.appendLine(`loading ${selection} structure: ${accession}`);
+  await panel.loadContent(config.command, { accession });
+  outputChannel.appendLine(`loaded ${selection} structure: ${accession}`);
 }

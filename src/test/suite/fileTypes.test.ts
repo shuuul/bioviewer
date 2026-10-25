@@ -17,6 +17,17 @@ suite("BioViewer File Types Test Suite", () => {
         });
     });
 
+    test("Should select the native parser for each small molecule format", () => {
+        for (const [extension, format] of [
+            ["sdf", "sdf"], ["sd", "sdf"], ["mol", "mol"],
+            ["mol2", "mol2"], ["pdbqt", "pdbqt"]
+        ]) {
+            for (const suffix of [`.${extension}`, `.${extension}.gz`, `.${extension.toUpperCase()}.GZ`]) {
+                assert.deepStrictEqual(getFileConfig(suffix), { format, command: "loadStructure" });
+            }
+        }
+    });
+
     test("Should expose marker file filters", () => {
         assert.deepStrictEqual(buildFileFilters()["Marker Files"], ["cmm", "cmm.gz"]);
     });

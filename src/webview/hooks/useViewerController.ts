@@ -25,6 +25,7 @@ export function useViewerController(): UseViewerControllerResult {
   const pendingMessagesRef = useRef<ExtensionToWebviewMessage[]>([]);
 
   useEffect(() => {
+    let disposed = false;
     const vscode = acquireVsCodeApi();
 
     const postToExtension = (message: WebviewToExtensionMessage): void => {
@@ -70,6 +71,10 @@ export function useViewerController(): UseViewerControllerResult {
         }
 
         const controller = await MolstarController.create("molstar-container", postToExtension);
+        if (disposed) {
+          controller.dispose();
+          return;
+        }
         controllerRef.current = controller;
 
         for (const queuedMessage of pendingMessagesRef.current) {
@@ -80,6 +85,9 @@ export function useViewerController(): UseViewerControllerResult {
         setStatus("ready");
         postToExtension({ command: "ready" });
       } catch (error) {
+        if (disposed) {
+          return;
+        }
         const message = `Failed to initialize viewer: ${getErrorMessage(error)}`;
         setStatus("error");
         setErrorMessage(message);
@@ -93,6 +101,7 @@ export function useViewerController(): UseViewerControllerResult {
     void initializeViewer();
 
     return () => {
+      disposed = true;
       window.removeEventListener("message", handleMessageEvent);
       window.removeEventListener("error", handleWindowError);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);

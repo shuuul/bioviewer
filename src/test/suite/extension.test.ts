@@ -12,7 +12,7 @@ import {
 } from "./testUtils";
 
 suite("BioViewer Extension Test Suite", () => {
-    const timeout = 20000;
+    const timeout = 60000;
 
     suiteSetup(async function(this: Mocha.Context) {
         this.timeout(timeout);
@@ -81,18 +81,9 @@ suite("BioViewer Extension Test Suite", () => {
         const invalidFile = getExampleUri("nonexistent.mrc");
         assert.ok(!fileExists(invalidFile), "Invalid test file should not exist");
 
-        const initialEditorCount = vscode.window.visibleTextEditors.length;
-
-        try {
-            await vscode.commands.executeCommand("bioviewer.openFiles", [invalidFile]);
-        } catch {
-            // Throwing is acceptable for invalid paths; we only care that no editor is opened.
-        }
-
-        assert.strictEqual(
-            vscode.window.visibleTextEditors.length,
-            initialEditorCount,
-            "No text editor should open for invalid files"
+        await assert.rejects(
+            async () => vscode.commands.executeCommand("bioviewer.openFiles", [invalidFile]),
+            /Failed to load 1 of 1 file\(s\).*nonexistent\.mrc/,
         );
     });
 

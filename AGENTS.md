@@ -106,7 +106,7 @@ This file provides guidance to coding agents when working with code in this repo
 **Webview Panel Management (`src/panels/BioViewerPanel.ts`)**
 - Singleton pattern for managing Mol* viewer instances
 - Handles secure webview communication with message filtering
-- Implements ready-state management for reliable content loading
+- Implements ready-state management and correlated load acknowledgements; commands wait for Mol* completion and reject failed loads
 - Injects React/Mol* webview asset URIs and security context (CSP, nonces)
 
 **Command Modules (`src/commands/*.ts`)**
@@ -127,7 +127,7 @@ This file provides guidance to coding agents when working with code in this repo
 2. **File Processing** → Extension reads file, checks size, converts to appropriate format
 3. **Message Passing** → Extension sends structured data to webview via postMessage
 4. **Mol* Loading** → Webview processes commands and loads data into Mol* viewer
-5. **Feedback Loop** → Webview sends status updates back to extension for user notification
+5. **Feedback Loop** → Webview returns a correlated success/failure result after loading; the extension settles the command and reports batch counts
 
 ### File Format Handling
 
@@ -161,7 +161,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 - **Webview Communication**: Filters undefined commands and invalid messages
 - **File Loading**: Graceful degradation with user feedback for unsupported formats
-- **Memory Issues**: Proactive file size checking with user confirmation dialogs
+- **Large Files**: Check and log file size before processing; files larger than 50 MB load without a confirmation dialog
 - **API Failures**: Comprehensive error reporting with specific failure reasons
 
 ## Logging Conventions
