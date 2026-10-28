@@ -107,7 +107,8 @@ This file provides guidance to coding agents when working with code in this repo
 - Singleton pattern for managing Mol* viewer instances
 - Handles secure webview communication with message filtering
 - Implements ready-state management and correlated load acknowledgements; commands wait for Mol* completion and reject failed loads
-- Injects React/Mol* webview asset URIs and security context (CSP, nonces)
+- Injects webview asset URIs, security context (CSP, nonces) and the initial `WebviewConfig` (persisted viewer settings + VS Code display language)
+- Persists viewer settings (language, custom colors) in `globalState`, saves exported images via `showSaveDialog`, and forwards the viewer's "Open file" action to `bioviewer.addFiles`
 
 **Command Modules (`src/commands/*.ts`)**
 - `databaseCommands.ts`: database picker + accession prompt + `loadPdb/loadAlphaFoldDb/loadEmdb`
@@ -115,45 +116,43 @@ This file provides guidance to coding agents when working with code in this repo
 - `fileTypes.ts`: supported extension list, open dialog filters, supported-filename matching, file format/command mapping
 - `types.ts`: shared command argument typings
 
-**React + Mol* Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/components/*`, `src/webview/services/*`)**
-- React app mounts UI shell and uses a hook to manage viewer lifecycle and extension messaging
-- UI overlay is split into reusable components (`components/ViewerOverlay.tsx`)
-- Mol* viewer v5.13.1 initialization and load queue logic live in services (`services/molstarController.ts`)
-- Blob URL management and gzip decompression happen in the webview service layer
+**React Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/services/*`)**
+- The UI is `<Studio>` from the published `@molstudio/react` package (Mol* v5.13.1 via `@molstudio/core`); BioViewer only supplies theme, locale, settings and `saveFile`
+- `hooks/useExtensionBridge.ts`: extension messaging, queues load requests until the viewer is mounted, correlates image saves
+- `hooks/useVsCodeTheme.ts`: maps the VS Code body theme class to the Studio theme
+- `services/viewerController.ts`: serial load queue, base64/gzip decoding, CMM markers via Mol*'s PLY reader
+- Type-checked by `src/webview/tsconfig.json` (bundler resolution, since `@molstudio/*` is ESM-only); the root `tsconfig.json` excludes `src/webview`
+- Change viewer UI behavior in the molstudio repository and publish a new version instead of patching it here
 
 ### Data Flow Architecture
 
 1. **User Interaction** → VS Code commands (Command Palette/Context Menu)
 2. **File Processing** → Extension reads file, checks size, converts to appropriate format
 3. **Message Passing** → Extension sends structured data to webview via postMessage
-4. **Mol* Loading** → Webview processes commands and loads data into Mol* viewer
+4. **Mol* Loading** → Webview processes commands and loads data through MolStudio
 5. **Feedback Loop** → Webview returns a correlated success/failure result after loading; the extension settles the command and reports batch counts
 
 ### File Format Handling
 
-**Structure and Volume/Map Files**: Read as binary, converted to base64, then loaded via blob URLs in the webview with filename-based labeling
+**Structure and Volume/Map Files**: Read as binary and converted to base64; the webview decodes structures to text (Mol* would read bytes as BinaryCIF) and passes maps as bytes, labeled by filename
 **Compressed Files (.gz)**: Automatically detected and decompressed in browser for bandwidth efficiency
-**Database Loading**: Direct API calls to PDB, AlphaFold, and EMDB through Mol* viewer methods
+**Database Loading**: `MolStudio.loadPdb/loadAlphaFoldDb/loadEmdb` (PDBe, AlphaFold DB, EMDB)
 
 ### Memory Management Strategy
 
 - File size logging for files >50MB (loading proceeds without a confirmation dialog)
-- Blob URL usage instead of data URLs for better memory efficiency
 - Browser-side gzip decompression for minimal network transfer (ideal for remote SSH scenarios)
-- Automatic cleanup of blob URLs after successful loading
 - Truncated logging to prevent console spam with large file content
 
 ### Build System
 
 **esbuild Configuration**:
 - Bundles extension code into `dist/extension.js` and React webview code into `dist/webview/app.js` + `app.css`
-- Copies only Mol* runtime assets (`molstar.js`, `molstar.css`) from `node_modules/molstar/build/viewer` to `dist/molstar/`
+- Bundles the Mol* modules MolStudio imports into `app.js` and the MolStudio stylesheet into `app.css` (no separate Mol* runtime, no CDN)
 - Copies webview HTML template and resources to dist/
-- Keeps Mol* runtime local in the VSIX (no runtime JS fetch from CDN)
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:
-- `copyMolstarPlugin` - Copies only the Mol* JS/CSS runtime assets used by the webview
 - `copyHtmlPlugin` - Copies webview template with placeholder replacement
 - `copyResourcesPlugin` - Copies static assets (icons, etc.)
 

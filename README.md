@@ -9,6 +9,8 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 
 ## ✨ Key Features
 
+- **🧭 Focused Viewer Interface**: An objects list and a per-object inspector (representation, color, opacity, focus) built with [MolStudio](https://www.npmjs.com/package/@molstudio/react), replacing the full Mol* control panels; follows the VS Code light/dark theme and display language
+- **🖼️ Publication Image Export**: Export PNG, TIFF, or JPEG at a chosen physical size and PPI, saved through the VS Code save dialog
 - **🗺️ Electron Microscopy Maps**: Full support for MRC, MAP, and CCP4 volume files with proper visualization
 - **🌐 Remote SSH Ready**: Optimized for remote development with efficient file transfer
 - **📦 Compression Support**: Automatic .gz file handling saves bandwidth - especially valuable for remote connections
@@ -79,7 +81,8 @@ BioViewer is optimized for remote SSH scenarios:
 This extension was inspired by [molstar/VSCoding-Sequence](https://github.com/molstar/VSCoding-Sequence) and builds upon the powerful [Mol* molecular visualization library](https://github.com/molstar/molstar).
 
 **Key Dependencies:**
-- **[Mol*](https://molstar.org/)** (v5.11.0) - The core molecular visualization engine
+- **[Mol*](https://molstar.org/)** (v5.13.1) - The core molecular visualization engine
+- **[MolStudio](https://www.npmjs.com/package/@molstudio/react)** - The viewer interface on top of Mol*
 - **[PDBe](https://www.ebi.ac.uk/pdbe/)** & **[RCSB PDB](https://www.rcsb.org/)** - Structural databases
 - **[AlphaFold](https://alphafold.ebi.ac.uk/)** - AI protein structure predictions
 - **[EMDB](https://www.ebi.ac.uk/emdb/)** - Electron Microscopy Data Bank

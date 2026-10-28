@@ -52,7 +52,7 @@ export async function openFromDatabase(
   outputChannel.appendLine(`user entered accession: ${accession}`);
 
   const panel = BioViewerPanel.create(
-    context.extensionUri,
+    context,
     `BioViewer - ${selection}: ${accession}`,
     outputChannel,
   );

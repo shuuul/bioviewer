@@ -91,7 +91,7 @@ function getOrCreateCurrentPanel(
   if (!panel) {
     outputChannel.appendLine("No active panel found, creating new panel");
     panel = BioViewerPanel.create(
-      context.extensionUri,
+      context,
       "BioViewer",
       outputChannel,
     );
@@ -212,7 +212,7 @@ export async function openFiles(
       : `BioViewer - ${fileNames.join(", ")}`;
 
   const panel = BioViewerPanel.create(
-    context.extensionUri,
+    context,
     title,
     outputChannel,
   );
@@ -253,7 +253,7 @@ export async function openFolder(
 
   const folderName = path.basename(folderUri.fsPath);
   const panel = BioViewerPanel.create(
-    context.extensionUri,
+    context,
     `BioViewer - ${folderName} (${files.length} files)`,
     outputChannel,
   );

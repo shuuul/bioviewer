@@ -23,7 +23,26 @@ type LoadPayload =
       label: string;
     };
 
-export type ExtensionToWebviewMessage = LoadPayload & { requestId: string };
+export type LoadMessage = LoadPayload & { requestId: string };
+
+export type SaveResultMessage =
+  | { command: "saveResult"; requestId: string; success: true }
+  | { command: "saveResult"; requestId: string; success: false; error: string };
+
+export type ExtensionToWebviewMessage = LoadMessage | SaveResultMessage;
+
+/** Viewer preferences the extension persists across panels and sessions. */
+export interface ViewerSettings {
+  customColors: string[];
+  /** null follows the VS Code display language. */
+  locale: string | null;
+}
+
+/** Injected into the webview HTML so the first render already uses the user's settings. */
+export interface WebviewConfig {
+  settings: ViewerSettings;
+  displayLanguage: string;
+}
 
 export type WebviewToExtensionMessage =
   | { command: "ready" }
@@ -31,7 +50,10 @@ export type WebviewToExtensionMessage =
   | { command: "info"; info: string }
   | { command: "debug"; message: string }
   | { command: "loadResult"; requestId: string; success: true }
-  | { command: "loadResult"; requestId: string; success: false; error: string };
+  | { command: "loadResult"; requestId: string; success: false; error: string }
+  | { command: "saveFile"; requestId: string; filename: string; data: string }
+  | { command: "updateSettings"; settings: ViewerSettings }
+  | { command: "openFiles" };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -39,6 +61,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function hasString(value: Record<string, unknown>, key: string): boolean {
   return typeof value[key] === "string";
+}
+
+export function isViewerSettings(value: unknown): value is ViewerSettings {
+  return isRecord(value) &&
+    Array.isArray(value.customColors) && value.customColors.every((color) => typeof color === "string") &&
+    (value.locale === null || typeof value.locale === "string");
 }
 
 function hasRequestId(value: Record<string, unknown>): boolean {
@@ -64,6 +92,12 @@ export function isWebviewToExtensionMessage(value: unknown): value is WebviewToE
         value.success === true ||
         (value.success === false && hasString(value, "error"))
       );
+    case "saveFile":
+      return hasRequestId(value) && hasString(value, "filename") && hasString(value, "data");
+    case "updateSettings":
+      return isViewerSettings(value.settings);
+    case "openFiles":
+      return true;
     default:
       return false;
   }
@@ -88,6 +122,8 @@ export function isExtensionToWebviewMessage(value: unknown): value is ExtensionT
         typeof value.isBinary === "boolean" &&
         typeof value.isCompressed === "boolean" &&
         hasString(value, "label");
+    case "saveResult":
+      return value.success === true || (value.success === false && hasString(value, "error"));
     default:
       return false;
   }

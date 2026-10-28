@@ -1,0 +1,12 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		// esbuild bundles the webview, so imports resolve like a bundler, including ESM-only packages.
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"types": [],
+		"rootDir": ".."
+	},
+	"include": ["./**/*", "../shared/**/*"],
+	"exclude": []
+}

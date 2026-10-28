@@ -19,5 +19,7 @@
 		"forceConsistentCasingInFileNames": true,
 		/* Additional Checks */
 		"noFallthroughCasesInSwitch": true
-	}
+	},
+	// The bundled webview is checked by src/webview/tsconfig.json.
+	"exclude": ["src/webview"]
 }

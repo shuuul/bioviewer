@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { BioViewerPanel } from "../../panels/BioViewerPanel";
+import { BioViewerPanel, type PanelContext } from "../../panels/BioViewerPanel";
 import { ensureExtensionActivated } from "./testUtils";
 
 suite("BioViewer Panel Lifecycle", () => {
@@ -48,11 +48,12 @@ suite("BioViewer Panel Lifecycle", () => {
             },
         } as unknown as vscode.WebviewPanel;
         const Panel = BioViewerPanel as unknown as {
-            new(panel: vscode.WebviewPanel, uri: vscode.Uri): BioViewerPanel;
+            new(panel: vscode.WebviewPanel, context: PanelContext): BioViewerPanel;
             _outputChannel: vscode.OutputChannel;
         };
         Panel._outputChannel = output;
-        instance = new Panel(panel, extensionUri);
+        const globalState = { get: () => undefined, update: async () => {} } as unknown as PanelContext["globalState"];
+        instance = new Panel(panel, { extensionUri, globalState });
     });
 
     teardown(() => {

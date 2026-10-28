@@ -1,11 +1,13 @@
 import { createRoot } from "react-dom/client";
+import "@molstudio/react/styles.css";
+import type { WebviewConfig } from "../shared/webviewProtocol";
 import { App } from "./App";
 import "./styles.css";
 
 const rootElement = document.getElementById("root");
-if (!rootElement) {
-  throw new Error("Webview root element not found.");
+if (!rootElement?.dataset.config) {
+  throw new Error("Webview root element or its config is missing.");
 }
+const config = JSON.parse(rootElement.dataset.config) as WebviewConfig;
 
-const root = createRoot(rootElement);
-root.render(<App />);
+createRoot(rootElement).render(<App config={config} />);

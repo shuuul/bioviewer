@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## Unreleased
+
+- feat: replace the Mol* control panels with the MolStudio interface (`@molstudio/react`): an objects list, a per-object inspector for representation, color, opacity and focus, a sequence panel, and a viewport toolbar. Panels float over the viewer and size to their content; the inspector appears only while an object is selected (Escape or a click on empty space dismisses it), a toolbar button hides all panels, and narrow panels switch to a compact layout automatically. The viewer follows the VS Code light/dark theme and display language, and remembers the chosen language and custom colors across tabs and sessions.
+- feat: export publication images (PNG, TIFF, JPEG) at a chosen size and PPI; files are saved through the VS Code save dialog.
+- feat: the viewer's "+" menu opens files through `BioViewer: Add Files to Current Tab`.
+- fix: structure files that parse to no atoms now fail their load instead of opening an empty structure.
+- perf: bundle only the Mol* modules the viewer uses; the webview JavaScript shrinks from 5.3 MB (Mol*'s prebuilt viewer) to 3.3 MB, and the content security policy no longer allows `unsafe-eval`.
+
 ## [0.4.1](https://github.com/shuuul/bioviewer/compare/v0.4.0...v0.4.1) (2026-10-25)
 
 - fix: clean up closed viewer tabs, reject pending loads and readiness waits on disposal, and target the focused surviving viewer when adding files.
