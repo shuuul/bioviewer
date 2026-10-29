@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## Unreleased
 
+- feat: CMM marker files with several `marker_set` elements load each set as its own object, named `<set name> · <file>`, instead of failing; marker ids and links are scoped to their set.
+- feat: marker sets appear in the objects list and open in the inspector, where they can be hidden, focused, removed, recolored (a uniform color or their own colors), resized and made transparent. Requires MolStudio 0.1.4; the classic viewer still draws markers as a mesh.
 - ci: GitHub Release notes group the CHANGELOG entries under Features, Bug Fixes, Performance and other headings by their type prefix.
 - ci: the VSIX attached to a GitHub Release is named with its version (`bioviewer-<version>.vsix`) instead of `bioviewer.vsix`.
 

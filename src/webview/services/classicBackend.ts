@@ -1,5 +1,6 @@
 import type { Viewer } from "molstar/lib/apps/viewer/app";
-import type { LoadDataOptions, StructureFormat, VolumeFormat } from "@molstudio/core";
+import type { LoadDataOptions, MarkerSet, StructureFormat, VolumeFormat } from "@molstudio/core";
+import { buildMarkerPlyMesh } from "./markerPly";
 import type { ViewerBackend } from "./viewerController";
 
 /** Adapts Mol*'s prebuilt Viewer app (loaded as `window.molstar`) to the loading surface BioViewer uses. */
@@ -42,6 +43,23 @@ export class ClassicBackend implements ViewerBackend {
       const parsed = await provider.parse(this.plugin, raw);
       await provider.visuals?.(this.plugin, parsed);
     });
+  }
+
+  /** The prebuilt Mol* has no MolStudio marker shape, so the set is drawn as a mesh through its PLY reader. */
+  async loadMarkers(markerSet: MarkerSet): Promise<void> {
+    const provider = this.plugin.dataFormats.get("ply");
+    if (!provider?.visuals) {
+      throw new Error("Mol* has no PLY mesh reader for marker files.");
+    }
+    const raw = await this.plugin.builders.data.rawData({ data: buildMarkerPlyMesh(markerSet), label: markerSet.label });
+    const parsed = await provider.parse(this.plugin, raw);
+    const shape = (parsed as { shape?: { cell?: { obj?: { label: string; data?: { label: string } } } } }).shape?.cell?.obj;
+    if (!shape?.data) {
+      throw new Error(`Marker set ${markerSet.label} produced no shape.`);
+    }
+    shape.label = markerSet.label;
+    shape.data.label = markerSet.label;
+    await provider.visuals(this.plugin, parsed);
   }
 
   /** Mol* parses some malformed input into an empty structure without failing, so check the result. */

@@ -1,0 +1,14 @@
+<marker_sets>
+  <marker_set name="pocket A">
+    <marker id="1" x="55.0" y="90.0" z="24.0" r="1.0" g="0.3" b="0.2" radius="2.0" />
+    <marker id="2" x="61.0" y="93.0" z="26.0" r="1.0" g="0.3" b="0.2" radius="2.0" />
+    <marker id="3" x="58.0" y="99.0" z="22.0" r="1.0" g="0.3" b="0.2" radius="2.0" />
+    <link id1="1" id2="2" r="1.0" g="0.8" b="0.6" radius="0.4" />
+    <link id1="2" id2="3" r="1.0" g="0.8" b="0.6" radius="0.4" />
+  </marker_set>
+  <marker_set name="pocket B">
+    <marker id="1" x="68.0" y="88.0" z="30.0" r="0.2" g="0.5" b="1.0" radius="2.0" />
+    <marker id="2" x="72.0" y="94.0" z="33.0" r="0.2" g="0.5" b="1.0" radius="2.0" />
+    <link id1="1" id2="2" r="0.6" g="0.8" b="1.0" radius="0.4" />
+  </marker_set>
+</marker_sets>

@@ -30,6 +30,7 @@ suite("BioViewer Example Files Test Suite", () => {
         { name: "Should load CIF file", files: ["6GIQ_ba1.cif"] },
         { name: "Should load SDF file", files: ["ADP_ideal.sdf"] },
         { name: "Should load CMM marker file", files: ["blob_1_NDP_1_prompt.cmm"] },
+        { name: "Should load CMM file with several marker sets", files: ["multi_marker_sets.cmm"] },
         {
             name: "Should load multiple files in same viewer",
             files: ["0004_unified_apix2.mrc", "6GIQ_ba1.cif"],

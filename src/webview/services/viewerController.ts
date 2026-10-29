@@ -1,12 +1,12 @@
-import type { MolStudio, StructureFormat, VolumeFormat } from "@molstudio/core";
+import type { MarkerSet, MolStudio, StructureFormat, VolumeFormat } from "@molstudio/core";
 import type { FileLoad, LoadMessage, WebviewToExtensionMessage } from "../../shared/webviewProtocol";
-import { buildCmmPlyMesh, parseCmmMarkerSet } from "./cmmMarkers";
+import { parseCmmMarkerSets } from "./cmmMarkers";
 import { getErrorMessage } from "../../shared/errors";
 
 type Reporter = (message: WebviewToExtensionMessage) => void;
 
 /** The loading surface both viewers provide: MolStudio directly, the classic Mol* viewer via an adapter. */
-export type ViewerBackend = Pick<MolStudio, "plugin" | "loadPdb" | "loadAlphaFoldDb" | "loadEmdb" | "loadStructure" | "loadVolume">;
+export type ViewerBackend = Pick<MolStudio, "plugin" | "loadPdb" | "loadAlphaFoldDb" | "loadEmdb" | "loadStructure" | "loadVolume" | "loadMarkers">;
 
 /** Runs extension load requests against the viewer one at a time and settles each with a `loadResult`. */
 export class ViewerController {
@@ -98,25 +98,21 @@ export class ViewerController {
     return new TextDecoder().decode(await this.decode(message));
   }
 
+  /** Loads each marker_set of a CMM file as its own object, so sets show, hide and restyle separately. */
   private async loadMarkers(message: FileLoad): Promise<string> {
-    const markerSet = parseCmmMarkerSet(await this.decodeText(message), message.label);
-
-    const plugin = this.viewer.plugin;
-    const provider = plugin.dataFormats.get("ply");
-    if (!provider?.visuals) {
-      throw new Error("Mol* has no PLY mesh reader for marker files.");
+    const markerSets = parseCmmMarkerSets(await this.decodeText(message), message.label);
+    for (const markerSet of markerSets) {
+      await this.viewer.loadMarkers(markerSet);
     }
-    const raw = await plugin.builders.data.rawData({ data: buildCmmPlyMesh(markerSet), label: message.label });
-    const parsed = await provider.parse(plugin, raw);
-    const shape = (parsed as { shape?: { cell?: { obj?: { label: string; data?: { label: string } } } } }).shape?.cell?.obj;
-    if (!shape?.data) {
-      throw new Error("Marker loading produced no shape.");
-    }
-    shape.label = message.label;
-    shape.data.label = message.label;
-    await provider.visuals(plugin, parsed);
-    return `Loaded markers: ${message.label} (${markerSet.markers.length} marker(s), ${markerSet.links.length} link(s))`;
+    return `Loaded markers: ${message.label} (${describeMarkerSets(markerSets)})`;
   }
+}
+
+function describeMarkerSets(markerSets: MarkerSet[]): string {
+  const markers = markerSets.reduce((total, markerSet) => total + markerSet.markers.length, 0);
+  const links = markerSets.reduce((total, markerSet) => total + markerSet.links.length, 0);
+  const counts = `${markers} marker(s), ${links} link(s)`;
+  return markerSets.length === 1 ? counts : `${markerSets.length} marker sets, ${counts}`;
 }
 
 async function gunzip(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {

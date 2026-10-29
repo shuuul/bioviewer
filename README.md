@@ -64,7 +64,7 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 
 ### CMM Marker Models
 
-BioViewer supports Chimera marker model files (`.cmm` and `.cmm.gz`) as marker overlays. A CMM file must contain one `<marker_set>` with one or more direct `<marker>` children:
+BioViewer supports Chimera marker model files (`.cmm` and `.cmm.gz`) as marker overlays. A CMM file contains one or more `<marker_set>` elements (several sets are wrapped in `<marker_sets>`), each with one or more direct `<marker>` children:
 
 ```xml
 <marker_set name="example_prompt">
@@ -72,7 +72,7 @@ BioViewer supports Chimera marker model files (`.cmm` and `.cmm.gz`) as marker o
 </marker_set>
 ```
 
-Required marker attributes are `id`, `x`, `y`, and `z`. Optional `radius`, `r`, `g`, and `b` attributes control sphere size and color. Direct `<link id1="..." id2="...">` children are supported when both marker ids exist; links render as tubes. CMM coordinates are rendered as stored so prompt points can be overlaid on matching MRC/MAP/CCP4 density maps without replacing the map.
+Required marker attributes are `id`, `x`, `y`, and `z`. Optional `radius`, `r`, `g`, and `b` attributes control sphere size and color. Direct `<link id1="..." id2="...">` children are supported when both marker ids exist; links render as tubes. Marker ids and links are scoped to their `<marker_set>`; each set loads as its own object, named `<set name> · <file>` when a file has several. CMM coordinates are rendered as stored so prompt points can be overlaid on matching MRC/MAP/CCP4 density maps without replacing the map.
 
 ### Quick Start
 

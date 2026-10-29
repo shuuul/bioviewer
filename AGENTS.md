@@ -122,7 +122,7 @@ This file provides guidance to coding agents when working with code in this repo
 - `services/extensionBridge.ts`: extension messaging for both viewers: runs loads once a viewer is attached, reports startup failures (`startupFailed` rejects the panel's readiness), correlates image saves
 - `classic.ts` + `services/classicBackend.ts`: the classic viewer entry; adapts Mol*'s prebuilt `Viewer` (`window.molstar`) to the same `ViewerBackend` the load queue uses
 - `services/vscodeTheme.ts`: reads the VS Code body theme class and watches it; `hooks/useVsCodeTheme.ts` feeds it to the Studio theme, and `classic.ts` swaps the Mol* skin and canvas background
-- `services/viewerController.ts`: `ViewerBackend` interface and the serial load queue, gzip decoding, CMM markers via Mol*'s PLY reader
+- `services/viewerController.ts`: `ViewerBackend` interface and the serial load queue, gzip decoding; CMM files are parsed by `services/cmmMarkers.ts` into one MolStudio `MarkerSet` per `marker_set`, loaded with `MolStudio.loadMarkers` (markers objects with color, size and opacity in the inspector); the classic backend draws each set as a PLY mesh (`services/markerPly.ts`)
 - Type-checked by `src/webview/tsconfig.json` (bundler resolution, since `@molstudio/*` is ESM-only); the root `tsconfig.json` excludes `src/webview`
 - Change viewer UI behavior in the molstudio repository and publish a new version instead of patching it here
 
