@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## Unreleased
+## [0.5.0](https://github.com/shuuul/bioviewer/compare/v0.4.1...v0.5.0) (2026-10-29)
 
 - feat: replace the Mol* control panels with the MolStudio interface (`@molstudio/react`): an objects list, a per-object inspector for representation, color, opacity and focus, a sequence panel, and a viewport toolbar. Panels float over the viewer and size to their content; the inspector appears only while an object is selected (Escape or a click on empty space dismisses it), a toolbar button hides all panels, and narrow panels switch to a compact layout automatically. The viewer follows the VS Code light/dark theme and display language, and remembers the chosen language and custom colors across tabs and sessions.
 - feat: the `bioviewer.viewer` setting switches new tabs back to the classic Mol* viewer (`classic`) or keeps the new interface (`studio`, the default). The first time the new viewer opens, a notification explains the change and offers to switch.
