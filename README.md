@@ -7,16 +7,25 @@
 
 A powerful Visual Studio Code extension for visualizing biological structures and electron microscopy maps. Built on [Mol*](https://molstar.org/), BioViewer brings advanced molecular visualization directly into your development environment.
 
+![A cryo-EM map with its fitted model in BioViewer](docs/screenshots/em-map.jpeg)
+
 ## ✨ Key Features
 
 - **🧭 Focused Viewer Interface**: An objects list and a per-object inspector (representation, color, opacity, focus) built with [MolStudio](https://www.npmjs.com/package/@molstudio/react), replacing the full Mol* control panels; follows the VS Code light/dark theme and display language
+- **🔁 Classic Mol* Viewer**: Switch back to Mol*'s full plugin interface with the `bioviewer.viewer` setting
 - **🖼️ Publication Image Export**: Export PNG, TIFF, or JPEG at a chosen physical size and PPI, saved through the VS Code save dialog
 - **🗺️ Electron Microscopy Maps**: Full support for MRC, MAP, and CCP4 volume files with proper visualization
-- **🌐 Remote SSH Ready**: Optimized for remote development with efficient file transfer
+- **🌐 Remote SSH Ready**: Files are sent to the viewer as raw bytes, and `.gz` files stay compressed until the viewer unpacks them
 - **📦 Compression Support**: Automatic .gz file handling saves bandwidth - especially valuable for remote connections
 - **🧬 Multiple Formats**: PDB, mmCIF, and all standard structural biology file formats
 - **📍 Marker Overlays**: Chimera `.cmm` marker models render prompt points and marker links on top of loaded maps or structures
 - **🔗 Database Integration**: Direct access to PDB, AlphaFold, and EMDB databases
+
+## 📸 Screenshots
+
+![Protein, RNA and DNA of Cas9 in one BioViewer tab](docs/screenshots/nucleic-acids.jpeg)
+
+![Imatinib in its Abl kinase binding pocket, in the VS Code light theme](docs/screenshots/ligand.jpeg)
 
 ## 🚀 Installation
 
@@ -36,6 +45,12 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 | `BioViewer: Open Folder` | Load all supported files from directory |
 | `BioViewer: Add Files to Current Tab` | Add files to active tab |
 | `BioViewer: Add Folder to Current Tab` | Add all supported files from directory to active tab |
+
+### Settings
+
+| Setting | Values | Description |
+|---------|--------|-------------|
+| `bioviewer.viewer` | `studio` (default), `classic` | `studio` is the focused objects-and-display interface; `classic` is Mol*'s own viewer with its full control panels. Applies to tabs opened after the change. |
 
 ### Supported Formats
 
@@ -69,7 +84,8 @@ BioViewer is optimized for remote SSH scenarios:
 
 - **Bandwidth Efficient**: .gz files stay compressed during transfer
 - **Smart Decompression**: Files decompress in browser, not on server
-- **Large File Handling**: Memory-efficient processing of big datasets
+- **Compressed Transfer**: Uncompressed files over 1 MB are gzipped on the remote host before they cross the network
+- **Large File Handling**: Files are passed to the viewer as raw bytes, without base64 re-encoding
 
 ## ⚙️ Requirements
 
