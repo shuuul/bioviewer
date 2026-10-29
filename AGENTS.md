@@ -108,7 +108,7 @@ This file provides guidance to coding agents when working with code in this repo
 - Handles secure webview communication with message filtering
 - Implements ready-state management and correlated load acknowledgements; commands wait for Mol* completion and reject failed loads
 - Injects webview asset URIs, security context (CSP, nonces) and the initial `WebviewConfig` (persisted viewer settings + VS Code display language)
-- Chooses the viewer from the `bioviewer.viewer` setting (`studio` → `bioviewer.html` + `app.js`; `classic` → `classic.html`, Mol*'s prebuilt `dist/molstar/molstar.js` and `classic.js`) and shows a one-time notification (`globalState` flag) the first time the studio viewer opens
+- Chooses the viewer from the `bioviewer.viewer` setting (`studio` → `bioviewer.html` + `app.js`; `classic` → `classic.html`, Mol*'s prebuilt `dist/molstar/molstar.js`, its `light.css`/`dark.css` skins and `classic.js`) and shows a one-time notification (`globalState` flag) the first time the studio viewer opens
 - Persists viewer settings (language, custom colors) in `globalState`, saves exported images via `showSaveDialog`, and forwards the viewer's "Open file" action to `bioviewer.addFiles`
 
 **Command Modules (`src/commands/*.ts`)**
@@ -121,7 +121,7 @@ This file provides guidance to coding agents when working with code in this repo
 - The UI is `<Studio>` from the published `@molstudio/react` package (Mol* v5.13.1 via `@molstudio/core`); BioViewer only supplies theme, locale, settings and `saveFile`
 - `services/extensionBridge.ts`: extension messaging for both viewers: runs loads once a viewer is attached, reports startup failures (`startupFailed` rejects the panel's readiness), correlates image saves
 - `classic.ts` + `services/classicBackend.ts`: the classic viewer entry; adapts Mol*'s prebuilt `Viewer` (`window.molstar`) to the same `ViewerBackend` the load queue uses
-- `hooks/useVsCodeTheme.ts`: maps the VS Code body theme class to the Studio theme
+- `services/vscodeTheme.ts`: reads the VS Code body theme class and watches it; `hooks/useVsCodeTheme.ts` feeds it to the Studio theme, and `classic.ts` swaps the Mol* skin and canvas background
 - `services/viewerController.ts`: `ViewerBackend` interface and the serial load queue, gzip decoding, CMM markers via Mol*'s PLY reader
 - Type-checked by `src/webview/tsconfig.json` (bundler resolution, since `@molstudio/*` is ESM-only); the root `tsconfig.json` excludes `src/webview`
 - Change viewer UI behavior in the molstudio repository and publish a new version instead of patching it here
@@ -151,7 +151,7 @@ This file provides guidance to coding agents when working with code in this repo
 **esbuild Configuration**:
 - Bundles extension code into `dist/extension.js`, the React webview into `dist/webview/app.js` + `app.css`, and the classic viewer entry into `dist/webview/classic.js` + `classic.css`
 - Bundles the Mol* modules MolStudio imports into `app.js` and the MolStudio stylesheet into `app.css` (no separate Mol* runtime, no CDN)
-- Copies both webview HTML templates, Mol*'s prebuilt viewer (`molstar.js`, `molstar.css` → `dist/molstar/`, classic viewer only) and resources to dist/
+- Copies both webview HTML templates, Mol*'s prebuilt viewer (`molstar.js` and the `theme/light.css`/`theme/dark.css` skins → `dist/molstar/`, classic viewer only) and resources to dist/
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:

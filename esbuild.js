@@ -43,7 +43,8 @@ const copyResourcesPlugin = {
 };
 
 /** The prebuilt Mol* Viewer app that the classic viewer loads as `window.molstar`. */
-const MOLSTAR_RUNTIME_FILES = ["molstar.js", "molstar.css"];
+/** Mol*'s prebuilt viewer and its light and dark skins, by source path under build/viewer. */
+const MOLSTAR_RUNTIME_FILES = ["molstar.js", "theme/light.css", "theme/dark.css"];
 
 const copyMolstarPlugin = {
   name: "copy-molstar-plugin",
@@ -54,7 +55,7 @@ const copyMolstarPlugin = {
       fs.rmSync(molstarDestDir, { recursive: true, force: true });
       fs.mkdirSync(molstarDestDir, { recursive: true });
       for (const file of MOLSTAR_RUNTIME_FILES) {
-        fs.copyFileSync(path.join(molstarSrcDir, file), path.join(molstarDestDir, file));
+        fs.copyFileSync(path.join(molstarSrcDir, file), path.join(molstarDestDir, path.basename(file)));
       }
       console.log("Copied Mol* runtime to dist/molstar/");
     });

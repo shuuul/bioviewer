@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file. See [commit
 - feat: export publication images (PNG, TIFF, JPEG) at a chosen size and PPI; files are saved through the VS Code save dialog.
 - feat: the viewer's "+" menu opens files through `BioViewer: Add Files to Current Tab`.
 - fix: structure files that parse to no atoms now fail their load instead of opening an empty structure.
+- fix: the classic Mol* viewer follows the VS Code light/dark theme, switching its panels and canvas background live; it previously always used Mol*'s light skin.
+- fix: update MolStudio to 0.1.2: pLDDT coloring is offered only for predicted models, ligand carbons are colored by element so ligands stand out from their pocket, focusing a ligand or residue keeps its surroundings in view, Reset camera fits the visible structures instead of a map's whole box, and short labels no longer fade at the edge.
 - fix: cancelling the image save dialog no longer shows an error.
 - fix: when the viewer fails to start, commands fail right away with the reason instead of waiting 30 seconds for a ready signal.
 - perf: files are posted to the viewer as raw bytes instead of base64 text, which cuts transfer size by a quarter and removes the ~400 MB string limit for large maps; exported images return the same way.

@@ -12,7 +12,7 @@ A powerful Visual Studio Code extension for visualizing biological structures an
 ## ✨ Key Features
 
 - **🧭 Focused Viewer Interface**: An objects list and a per-object inspector (representation, color, opacity, focus) built with [MolStudio](https://www.npmjs.com/package/@molstudio/react), replacing the full Mol* control panels; follows the VS Code light/dark theme and display language
-- **🔁 Classic Mol* Viewer**: Switch back to Mol*'s full plugin interface with the `bioviewer.viewer` setting
+- **🔁 Classic Mol* Viewer**: Switch back to Mol*'s full plugin interface with the `bioviewer.viewer` setting; it also follows the VS Code light/dark theme
 - **🖼️ Publication Image Export**: Export PNG, TIFF, or JPEG at a chosen physical size and PPI, saved through the VS Code save dialog
 - **🗺️ Electron Microscopy Maps**: Full support for MRC, MAP, and CCP4 volume files with proper visualization
 - **🌐 Remote SSH Ready**: Files are sent to the viewer as raw bytes, and `.gz` files stay compressed until the viewer unpacks them

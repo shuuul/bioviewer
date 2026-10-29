@@ -8,7 +8,7 @@
       content="default-src 'none'; img-src ${cspSource} https: data: blob:; style-src ${cspSource}; script-src ${cspSource} 'nonce-${nonce}' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src ${cspSource} https: data: blob:; font-src ${cspSource}; worker-src ${cspSource} blob:;"
     />
     <title>BioViewer - Classic Mol* Viewer</title>
-    <link rel="stylesheet" type="text/css" href="${molstarCssUri}" />
+    <link id="molstar-skin" rel="stylesheet" type="text/css" data-light="${molstarLightCssUri}" data-dark="${molstarDarkCssUri}" />
     <link rel="stylesheet" type="text/css" href="${classicCssUri}" />
   </head>
   <body>

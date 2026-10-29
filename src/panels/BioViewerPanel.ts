@@ -519,7 +519,8 @@ export class BioViewerPanel {
         values.appJsUri = asset("webview", "app.js");
         values.config = escapeAttribute(JSON.stringify(config));
       } else {
-        values.molstarCssUri = asset("molstar", "molstar.css");
+        values.molstarLightCssUri = asset("molstar", "light.css");
+        values.molstarDarkCssUri = asset("molstar", "dark.css");
         values.molstarJsUri = asset("molstar", "molstar.js");
         values.classicCssUri = asset("webview", "classic.css");
         values.classicJsUri = asset("webview", "classic.js");
