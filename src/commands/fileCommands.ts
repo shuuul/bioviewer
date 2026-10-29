@@ -1,11 +1,15 @@
 import * as path from "path";
+import { promisify } from "util";
 import * as vscode from "vscode";
+import { gzip } from "zlib";
 import { BioViewerPanel } from "../panels/BioViewerPanel";
+import { getErrorMessage } from "../shared/errors";
 import {
   buildFileFilters,
   getFileConfig,
   isSupportedFileName,
 } from "./fileTypes";
+import type { FileLoad } from "../shared/webviewProtocol";
 import type { FileCommandArg } from "./types";
 
 function resolveCommandFiles(
@@ -36,6 +40,21 @@ export async function findSupportedFolderFiles(
   const files: vscode.Uri[] = [];
   await collectSupportedFiles(folderUri, files);
   return files.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+}
+
+/** Finds the folder's supported files, telling the user when there are none. */
+async function findFolderFilesOrNotify(
+  folderUri: vscode.Uri,
+  outputChannel: vscode.OutputChannel,
+): Promise<vscode.Uri[]> {
+  const files = await findSupportedFolderFiles(folderUri);
+  if (files.length === 0) {
+    void vscode.window.showInformationMessage(
+      `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`,
+    );
+    outputChannel.appendLine(`no supported files found in folder: ${folderUri.fsPath}`);
+  }
+  return files;
 }
 
 async function collectSupportedFiles(
@@ -87,98 +106,82 @@ function getOrCreateCurrentPanel(
   context: vscode.ExtensionContext,
   outputChannel: vscode.OutputChannel,
 ): BioViewerPanel {
-  let panel = BioViewerPanel.getCurrentPanel();
-  if (!panel) {
-    outputChannel.appendLine("No active panel found, creating new panel");
-    panel = BioViewerPanel.create(
-      context,
-      "BioViewer",
-      outputChannel,
-    );
+  const panel = BioViewerPanel.currentPanel;
+  if (panel) {
     return panel;
   }
-
-  outputChannel.appendLine("Using existing panel");
-  return panel;
+  outputChannel.appendLine("no open panel, creating one");
+  return BioViewerPanel.create(context, "BioViewer", outputChannel);
 }
 
-async function loadFile(
-  panel: BioViewerPanel,
-  fileUri: vscode.Uri,
-  outputChannel: vscode.OutputChannel,
-): Promise<void> {
+/** Remote sessions gzip uncompressed files above this size before sending them to the local viewer. */
+const REMOTE_GZIP_MIN_BYTES = 1024 * 1024;
+const gzipAsync = promisify(gzip);
+
+/** Reads a file into the load request the viewer expects. */
+async function readFileLoad(fileUri: vscode.Uri, outputChannel: vscode.OutputChannel): Promise<FileLoad> {
   const fileName = path.basename(fileUri.fsPath);
-  let fileExtension = path.extname(fileUri.fsPath).toLowerCase();
-  const isCompressed = fileExtension === ".gz";
-
-  if (fileExtension === ".gz") {
-    const baseName = fileName.slice(0, -3);
-    const innerExtension = path.extname(baseName).toLowerCase();
-    if (innerExtension) {
-      fileExtension = `${innerExtension}.gz`;
-    }
-  }
-
-  outputChannel.appendLine(
-    `Processing file: ${fileName} (compressed: ${isCompressed})`,
-  );
-
-  const fileConfig = getFileConfig(fileExtension);
+  const fileConfig = getFileConfig(fileName);
   if (!fileConfig) {
-    const errorMessage = `Unsupported file format: ${fileExtension}`;
-    throw new Error(errorMessage);
+    throw new Error(`Unsupported file format: ${fileName}`);
   }
 
-  const fileStats = await vscode.workspace.fs.stat(fileUri);
-  const fileSizeBytes = fileStats.size;
-  const fileSizeMB = fileSizeBytes / (1024 * 1024);
-
-  outputChannel.appendLine(`File size: ${fileSizeMB.toFixed(2)} MB`);
-  if (fileSizeMB > 50) {
+  const bytes = await vscode.workspace.fs.readFile(fileUri);
+  const sizeMB = (bytes.byteLength / (1024 * 1024)).toFixed(2);
+  // The webview runs on the local machine, so in a remote session every byte crosses the network.
+  if (vscode.env.remoteName && !fileConfig.isCompressed && bytes.byteLength >= REMOTE_GZIP_MIN_BYTES) {
+    const compressed = await gzipAsync(bytes, { level: 1 });
     outputChannel.appendLine(
-      `Loading large file: ${fileName} (${fileSizeMB.toFixed(2)} MB)`,
+      `read file: ${fileName} (${sizeMB} MB, sending ${(compressed.byteLength / (1024 * 1024)).toFixed(2)} MB gzip)`,
     );
+    return { ...fileConfig, isCompressed: true, data: plainBytes(compressed) };
   }
-
-  const fileContent = await vscode.workspace.fs.readFile(fileUri);
-  const data = Buffer.from(fileContent).toString("base64");
-
-  let label = path.basename(fileUri.fsPath, path.extname(fileUri.fsPath));
-  if (isCompressed) {
-    label = path.basename(label, path.extname(label));
-  }
-
-  const loadParams = {
-    data,
-    format: fileConfig.format,
-    isBinary: true,
-    isCompressed,
-    label,
-  };
-
-  outputChannel.appendLine(
-    `Loading with command: ${fileConfig.command}, format: ${fileConfig.format}, compressed: ${isCompressed}`,
-  );
-  await panel.loadContent(fileConfig.command, loadParams);
-  outputChannel.appendLine(`file loaded: ${fileName}`);
+  outputChannel.appendLine(`read file: ${fileName} (${sizeMB} MB, ${fileConfig.format})`);
+  return { ...fileConfig, data: plainBytes(bytes) };
 }
 
+/** A Node Buffer's toJSON would make postMessage send a plain object instead of transferring bytes. */
+function plainBytes(bytes: Uint8Array): Uint8Array {
+  return new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+}
+
+/** Loads files in order, reading the next file from disk while the viewer parses the current one. */
 async function loadFiles(
   panel: BioViewerPanel,
   files: vscode.Uri[],
   outputChannel: vscode.OutputChannel,
 ): Promise<void> {
+  await panel.waitForReady();
   const failures: string[] = [];
-  for (const file of files) {
-    try {
-      await loadFile(panel, file, outputChannel);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      const message = `${path.basename(file.fsPath)}: ${reason}`;
-      failures.push(message);
-      outputChannel.appendLine(`Error: failed to load ${message}`);
-    }
-  }
+  const read = (index: number) => {
+    const reading = readFileLoad(files[index], outputChannel);
+    // Failures surface when the read is awaited; this keeps an early prefetch from going unhandled.
+    reading.catch(() => {});
+    return reading;
+  };
+
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Window, title: "BioViewer" },
+    async (progress) => {
+      let next = read(0);
+      for (let index = 0; index < files.length; index++) {
+        const fileName = path.basename(files[index].fsPath);
+        const current = next;
+        if (index + 1 < files.length) {
+          next = read(index + 1);
+        }
+        progress.report({ message: files.length > 1 ? `loading ${fileName} (${index + 1}/${files.length})` : `loading ${fileName}` });
+        try {
+          await panel.loadContent(await current);
+          outputChannel.appendLine(`file loaded: ${fileName}`);
+        } catch (error) {
+          const message = `${fileName}: ${getErrorMessage(error)}`;
+          failures.push(message);
+          outputChannel.appendLine(`Error: failed to load ${message}`);
+        }
+      }
+    },
+  );
 
   outputChannel.appendLine(
     `loaded ${files.length - failures.length} of ${files.length} file(s); ${failures.length} failed`,
@@ -217,16 +220,6 @@ export async function openFiles(
     outputChannel,
   );
 
-  outputChannel.appendLine(
-    `created new panel for ${filesToOpen.length} file(s)`,
-  );
-  outputChannel.appendLine(
-    `loading ${filesToOpen.length} file(s) from: ${filesToOpen.map((file) => file.fsPath).join(", ")}`,
-  );
-
-  await panel.waitForReady();
-  outputChannel.appendLine("Panel is ready, loading files...");
-
   await loadFiles(panel, filesToOpen, outputChannel);
 }
 
@@ -240,30 +233,16 @@ export async function openFolder(
     return;
   }
 
-  const files = await findSupportedFolderFiles(folderUri);
+  const files = await findFolderFilesOrNotify(folderUri, outputChannel);
   if (files.length === 0) {
-    vscode.window.showInformationMessage(
-      `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`,
-    );
-    outputChannel.appendLine(
-      `No supported files found in folder: ${folderUri.fsPath}`,
-    );
     return;
   }
 
-  const folderName = path.basename(folderUri.fsPath);
   const panel = BioViewerPanel.create(
     context,
-    `BioViewer - ${folderName} (${files.length} files)`,
+    `BioViewer - ${path.basename(folderUri.fsPath)} (${files.length} files)`,
     outputChannel,
   );
-
-  outputChannel.appendLine(`Created panel for folder: ${folderName}`);
-  outputChannel.appendLine(`Found ${files.length} supported files`);
-
-  await panel.waitForReady();
-  outputChannel.appendLine("Panel is ready, loading folder contents...");
-
   await loadFiles(panel, files, outputChannel);
 }
 
@@ -283,12 +262,6 @@ export async function addFiles(
   }
 
   const panel = getOrCreateCurrentPanel(context, outputChannel);
-
-  await panel.waitForReady();
-  outputChannel.appendLine(
-    `Adding ${filesToAdd.length} file(s) to current panel`,
-  );
-
   await loadFiles(panel, filesToAdd, outputChannel);
 }
 
@@ -302,28 +275,11 @@ export async function addFolderToCurrentPanel(
     return;
   }
 
-  const files = await findSupportedFolderFiles(folderUri);
+  const files = await findFolderFilesOrNotify(folderUri, outputChannel);
   if (files.length === 0) {
-    vscode.window.showInformationMessage(
-      `No supported biological structure files found in folder: ${path.basename(folderUri.fsPath)}`,
-    );
-    outputChannel.appendLine(
-      `No supported files found in folder: ${folderUri.fsPath}`,
-    );
     return;
   }
 
-  const folderName = path.basename(folderUri.fsPath);
-  outputChannel.appendLine(
-    `Found ${files.length} supported files in folder: ${folderName}`,
-  );
-
   const panel = getOrCreateCurrentPanel(context, outputChannel);
-
-  await panel.waitForReady();
-  outputChannel.appendLine(
-    `Adding ${files.length} file(s) from folder: ${folderName} to current panel`,
-  );
-
   await loadFiles(panel, files, outputChannel);
 }

@@ -57,10 +57,7 @@ export async function openFromDatabase(
     outputChannel,
   );
 
-  await panel.waitForReady();
-  outputChannel.appendLine("Panel is ready");
-
   outputChannel.appendLine(`loading ${selection} structure: ${accession}`);
-  await panel.loadContent(config.command, { accession });
+  await panel.loadContent({ command: config.command, accession });
   outputChannel.appendLine(`loaded ${selection} structure: ${accession}`);
 }

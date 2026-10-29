@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { openFromDatabase } from "./commands/databaseCommands";
 import { addFiles, addFolderToCurrentPanel, openFiles, openFolder } from "./commands/fileCommands";
 import type { FileCommandArg } from "./commands/types";
+import { getErrorMessage } from "./shared/errors";
 
 const outputChannel = vscode.window.createOutputChannel("BioViewer");
 
@@ -13,7 +14,7 @@ function registerCommand<T extends unknown[]>(
     try {
       await handler(...args);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       outputChannel.appendLine(`Error: ${message}`);
       void vscode.window.showErrorMessage(`BioViewer: ${message}`);
       throw error;

@@ -2,11 +2,12 @@ import * as vscode from "vscode";
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
+import { getErrorMessage } from "../shared/errors";
 import {
   isViewerSettings,
   isWebviewToExtensionMessage,
-  type ExtensionCommand,
   type ExtensionToWebviewMessage,
+  type LoadPayload,
   type ViewerSettings,
   type WebviewConfig,
 } from "../shared/webviewProtocol";
@@ -16,11 +17,24 @@ export type PanelContext = Pick<vscode.ExtensionContext, "extensionUri" | "globa
 
 const SETTINGS_KEY = "bioviewer.viewerSettings";
 const DEFAULT_SETTINGS: ViewerSettings = { customColors: [], locale: null };
+const STUDIO_INTRO_KEY = "bioviewer.studioIntroShown";
+
+/** `studio` is the MolStudio interface; `classic` is Mol*'s own viewer app. */
+export type ViewerKind = "studio" | "classic";
+
+/** Reads the `bioviewer.viewer` setting, which applies to panels opened after it changes. */
+export function configuredViewer(): ViewerKind {
+  const value = vscode.workspace.getConfiguration("bioviewer").get<string>("viewer", "studio");
+  if (value !== "studio" && value !== "classic") {
+    throw new Error(`Unknown bioviewer.viewer setting "${value}"; use "studio" or "classic".`);
+  }
+  return value;
+}
 
 /**
- * BioViewerPanel manages the webview panel for displaying biological structures
- * using the Mol* viewer. It handles panel creation, content loading, and
- * communication between the extension and the webview.
+ * One BioViewer webview tab: creates the panel, waits for its viewer to start, and sends it
+ * load requests whose completion the viewer reports back. `currentPanel` tracks the most
+ * recently active tab for the "add to current tab" commands.
  */
 export class BioViewerPanel {
   /** The currently active BioViewer panel */
@@ -53,14 +67,11 @@ export class BioViewerPanel {
   /** Flag indicating if the webview is ready */
   private _isReady: boolean = false;
 
-  /** Flag indicating if content is currently loading */
-  private _isLoading: boolean = false;
-
   /** Flag indicating if the panel has been disposed */
   private _isDisposed: boolean = false;
 
-  /** Cached HTML template content (read once at module load) */
-  private static _cachedHtmlContent: string | null = null;
+  /** HTML templates by viewer, read on first use */
+  private static readonly _templates = new Map<ViewerKind, string>();
 
   private readonly _globalState: vscode.Memento;
 
@@ -80,7 +91,7 @@ export class BioViewerPanel {
    * @returns True if content is currently being loaded
    */
   public get isLoading(): boolean {
-    return this._isLoading;
+    return this._pendingLoads.size > 0;
   }
 
   /**
@@ -88,7 +99,7 @@ export class BioViewerPanel {
    * @param panel - The VS Code webview panel
    * @param context - Extension files and persisted settings
    */
-  private constructor(panel: vscode.WebviewPanel, context: PanelContext) {
+  private constructor(panel: vscode.WebviewPanel, context: PanelContext, viewer: ViewerKind) {
     const startTime = Date.now();
     BioViewerPanel._outputChannel.appendLine(
       `initializing panel: ${panel.title}`,
@@ -131,6 +142,7 @@ export class BioViewerPanel {
         this._panel.webview.html = this._getWebviewContent(
           this._panel.webview,
           context.extensionUri,
+          viewer,
         );
         BioViewerPanel._outputChannel.appendLine(
           `panel initialized in ${Date.now() - startTime}ms`,
@@ -154,13 +166,9 @@ export class BioViewerPanel {
   private _setupMessageHandling(): void {
     this._panel.webview.onDidReceiveMessage(
       (rawMessage: unknown) => {
-        BioViewerPanel._outputChannel.appendLine(
-          `received message from webview: ${JSON.stringify(rawMessage)}`,
-        );
-
         if (!isWebviewToExtensionMessage(rawMessage)) {
           BioViewerPanel._outputChannel.appendLine(
-            `Warning: received unexpected webview payload: ${JSON.stringify(rawMessage)}`,
+            `Warning: ignored an unexpected webview message`,
           );
           return;
         }
@@ -173,7 +181,6 @@ export class BioViewerPanel {
             }
             clearTimeout(pending.timeout);
             this._pendingLoads.delete(rawMessage.requestId);
-            this._isLoading = this._pendingLoads.size > 0;
             if (rawMessage.success) {
               pending.resolve();
             } else {
@@ -184,6 +191,13 @@ export class BioViewerPanel {
           case "ready":
             BioViewerPanel._outputChannel.appendLine(`webview is ready`);
             this._handleReady();
+            break;
+
+          case "startupFailed":
+            BioViewerPanel._outputChannel.appendLine(`Error: viewer failed to start - ${rawMessage.error}`);
+            this._rejectReady?.(new Error(`The viewer failed to start: ${rawMessage.error}`));
+            this._rejectReady = undefined;
+            this._resolveReady = undefined;
             break;
 
           case "error":
@@ -224,7 +238,7 @@ export class BioViewerPanel {
   }
 
   /** Asks where to save a file exported by the viewer, writes it, and reports the outcome back. */
-  private async _saveFile(requestId: string, filename: string, base64: string): Promise<void> {
+  private async _saveFile(requestId: string, filename: string, data: Uint8Array): Promise<void> {
     const reply = (message: ExtensionToWebviewMessage): void => {
       void this._panel.webview.postMessage(message);
     };
@@ -235,14 +249,15 @@ export class BioViewerPanel {
         saveLabel: "Save Image",
       });
       if (!target) {
-        reply({ command: "saveResult", requestId, success: false, error: "Save cancelled." });
+        BioViewerPanel._outputChannel.appendLine(`image save cancelled`);
+        reply({ command: "saveResult", requestId, success: true });
         return;
       }
-      await vscode.workspace.fs.writeFile(target, Buffer.from(base64, "base64"));
+      await vscode.workspace.fs.writeFile(target, data);
       BioViewerPanel._outputChannel.appendLine(`image saved: ${target.fsPath}`);
       reply({ command: "saveResult", requestId, success: true });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       BioViewerPanel._outputChannel.appendLine(`Error: failed to save image - ${message}`);
       reply({ command: "saveResult", requestId, success: false, error: message });
     }
@@ -325,6 +340,8 @@ export class BioViewerPanel {
     const column =
       vscode.window.activeTextEditor?.viewColumn || vscode.ViewColumn.One;
 
+    const viewer = configuredViewer();
+
     // Create the webview panel with appropriate options
     const panel = vscode.window.createWebviewPanel("BioViewer", title, column, {
       enableScripts: true,
@@ -336,7 +353,7 @@ export class BioViewerPanel {
 
     let instance: BioViewerPanel;
     try {
-      instance = new BioViewerPanel(panel, context);
+      instance = new BioViewerPanel(panel, context, viewer);
     } catch (error) {
       panel.dispose();
       throw error;
@@ -344,34 +361,41 @@ export class BioViewerPanel {
     BioViewerPanel._panels.add(instance);
     BioViewerPanel.currentPanel = instance;
     BioViewerPanel._outputChannel.appendLine(
-      `panel created in ${Date.now() - startTime}ms`,
+      `${viewer} panel created in ${Date.now() - startTime}ms`,
     );
+    if (viewer === "studio" && !context.globalState.get<boolean>(STUDIO_INTRO_KEY)) {
+      void BioViewerPanel._introduceStudio(context.globalState);
+    }
     return instance;
   }
 
-  /**
-   * Gets the currently active BioViewer panel
-   * @returns The current panel instance or undefined if none exists
-   */
-  public static getCurrentPanel(): BioViewerPanel | undefined {
-    return BioViewerPanel.currentPanel;
+  /** Tells first-time users about the new viewer and how to return to the classic Mol* one. */
+  private static async _introduceStudio(globalState: vscode.Memento): Promise<void> {
+    await globalState.update(STUDIO_INTRO_KEY, true);
+    const useClassic = "Use Classic Viewer";
+    const openSettings = "Settings";
+    const choice = await vscode.window.showInformationMessage(
+      "BioViewer has a new viewer interface. You can switch back to the classic Mol* viewer at any time with the BioViewer: Viewer setting.",
+      useClassic,
+      openSettings,
+    );
+    if (choice === useClassic) {
+      await vscode.workspace.getConfiguration("bioviewer").update("viewer", "classic", vscode.ConfigurationTarget.Global);
+      BioViewerPanel._outputChannel.appendLine(`viewer switched to classic`);
+      void vscode.window.showInformationMessage("New BioViewer tabs will open in the classic Mol* viewer.");
+    } else if (choice === openSettings) {
+      await vscode.commands.executeCommand("workbench.action.openSettings", "bioviewer.viewer");
+    }
   }
 
-  /**
-   * Loads content into the BioViewer by sending a command to the webview
-   * @param command - The command to execute in the webview
-   * @param params - Parameters for the command
-   */
-  public async loadContent(
-    command: ExtensionCommand,
-    params: Record<string, unknown>,
-  ): Promise<void> {
+  /** Sends one load request to the viewer and settles when the viewer reports its outcome. */
+  public async loadContent(payload: LoadPayload): Promise<void> {
     await this.waitForReady();
     if (this._isDisposed) {
       throw new Error("Viewer panel was closed.");
     }
     const requestId = String(++this._nextRequestId);
-    BioViewerPanel._outputChannel.appendLine(`loading request ${requestId}: ${command}`);
+    BioViewerPanel._outputChannel.appendLine(`loading request ${requestId}: ${payload.command}`);
     return new Promise<void>((resolve, reject) => {
       const fail = (error: Error): void => {
         const pending = this._pendingLoads.get(requestId);
@@ -380,25 +404,21 @@ export class BioViewerPanel {
         }
         clearTimeout(pending.timeout);
         this._pendingLoads.delete(requestId);
-        this._isLoading = this._pendingLoads.size > 0;
         reject(error);
       };
       const timeout = setTimeout(() => {
         fail(new Error(`Loading did not complete within ${BioViewerPanel.LOAD_TIMEOUT_MS / 1000}s.`));
       }, BioViewerPanel.LOAD_TIMEOUT_MS);
       this._pendingLoads.set(requestId, { resolve, reject, timeout });
-      this._isLoading = true;
-      try {
-        void Promise.resolve(this._panel.webview.postMessage({ ...params, command, requestId }))
-          .then((delivered) => {
-            if (!delivered) {
-              fail(new Error("Failed to deliver loading request to the viewer."));
-            }
-          })
-          .catch((error: unknown) => fail(error instanceof Error ? error : new Error(String(error))));
-      } catch (error) {
-        fail(error instanceof Error ? error : new Error(String(error)));
-      }
+      const message: ExtensionToWebviewMessage = { ...payload, requestId };
+      this._panel.webview.postMessage(message).then(
+        (delivered) => {
+          if (!delivered) {
+            fail(new Error("Failed to deliver loading request to the viewer."));
+          }
+        },
+        (error: unknown) => fail(new Error(getErrorMessage(error))),
+      );
     });
   }
 
@@ -421,7 +441,6 @@ export class BioViewerPanel {
       pending.reject(error);
     }
     this._pendingLoads.clear();
-    this._isLoading = false;
     BioViewerPanel._panels.delete(this);
 
     // Clear the current panel reference if this is the current panel
@@ -459,50 +478,60 @@ export class BioViewerPanel {
    * Generates the HTML content for the webview
    * @param webview - The webview instance
    * @param extensionUri - The extension's URI for resource loading
+   * @param viewer - Which viewer interface the panel shows
    * @returns The complete HTML content for the webview
    */
   private _getWebviewContent(
     webview: vscode.Webview,
     extensionUri: vscode.Uri,
+    viewer: ViewerKind,
   ): string {
     const startTime = Date.now();
+    const asset = (...segments: string[]): string =>
+      webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "dist", ...segments)).toString();
 
     try {
-      // Read and cache HTML template on first use
-      if (BioViewerPanel._cachedHtmlContent === null) {
+      let template = BioViewerPanel._templates.get(viewer);
+      if (template === undefined) {
         const htmlPath = path.join(
           extensionUri.fsPath,
           "dist",
           "webview",
-          "bioviewer.html",
+          viewer === "studio" ? "bioviewer.html" : "classic.html",
         );
-        BioViewerPanel._cachedHtmlContent = fs.readFileSync(htmlPath, "utf8");
+        template = fs.readFileSync(htmlPath, "utf8");
+        BioViewerPanel._templates.set(viewer, template);
         BioViewerPanel._outputChannel.appendLine(
           `cached HTML template from: ${htmlPath}`,
         );
       }
 
-      // Generate URIs for resources
-      const appCssUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, "dist", "webview", "app.css"),
-      );
-      const appJsUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, "dist", "webview", "app.js"),
-      );
-      const cspSource = webview.cspSource;
-      const nonce = this._generateNonce();
-      const config: WebviewConfig = {
-        settings: this._readSettings(),
-        displayLanguage: vscode.env.language,
+      const values: Record<string, string> = {
+        cspSource: webview.cspSource,
+        nonce: crypto.randomBytes(16).toString("hex"),
       };
+      if (viewer === "studio") {
+        const config: WebviewConfig = {
+          settings: this._readSettings(),
+          displayLanguage: vscode.env.language,
+        };
+        values.appCssUri = asset("webview", "app.css");
+        values.appJsUri = asset("webview", "app.js");
+        values.config = escapeAttribute(JSON.stringify(config));
+      } else {
+        values.molstarCssUri = asset("molstar", "molstar.css");
+        values.molstarJsUri = asset("molstar", "molstar.js");
+        values.classicCssUri = asset("webview", "classic.css");
+        values.classicJsUri = asset("webview", "classic.js");
+      }
 
-      // Replace placeholders with actual URIs and security nonce
-      const htmlContent = BioViewerPanel._cachedHtmlContent
-        .replace(/\$\{appCssUri\}/g, appCssUri.toString())
-        .replace(/\$\{appJsUri\}/g, appJsUri.toString())
-        .replace(/\$\{cspSource\}/g, cspSource)
-        .replace(/\$\{nonce\}/g, nonce)
-        .replace(/\$\{config\}/g, escapeAttribute(JSON.stringify(config)));
+      const htmlContent = template.replace(/\$\{(\w+)\}/g, (_, key: string) => {
+        const value = values[key];
+        if (value === undefined) {
+          throw new Error(`template placeholder \${${key}} has no value`);
+        }
+        return value;
+      });
 
       BioViewerPanel._outputChannel.appendLine(
         `webview content generated in ${Date.now() - startTime}ms`,
@@ -513,14 +542,6 @@ export class BioViewerPanel {
       BioViewerPanel._outputChannel.appendLine(`Error: ${errorMsg}`);
       throw new Error(errorMsg);
     }
-  }
-
-  /**
-   * Generates a cryptographically secure nonce for Content Security Policy
-   * @returns A random 32-character string
-   */
-  private _generateNonce(): string {
-    return crypto.randomBytes(16).toString("hex");
   }
 }
 

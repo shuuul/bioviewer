@@ -42,6 +42,27 @@ const copyResourcesPlugin = {
   }
 };
 
+/** The prebuilt Mol* Viewer app that the classic viewer loads as `window.molstar`. */
+const MOLSTAR_RUNTIME_FILES = ["molstar.js", "molstar.css"];
+
+const copyMolstarPlugin = {
+  name: "copy-molstar-plugin",
+  setup(build) {
+    build.onEnd(() => {
+      const molstarSrcDir = path.join(__dirname, "node_modules", "molstar", "build", "viewer");
+      const molstarDestDir = path.join(__dirname, "dist", "molstar");
+      fs.rmSync(molstarDestDir, { recursive: true, force: true });
+      fs.mkdirSync(molstarDestDir, { recursive: true });
+      for (const file of MOLSTAR_RUNTIME_FILES) {
+        fs.copyFileSync(path.join(molstarSrcDir, file), path.join(molstarDestDir, file));
+      }
+      console.log("Copied Mol* runtime to dist/molstar/");
+    });
+  }
+};
+
+const WEBVIEW_TEMPLATES = ["bioviewer.html", "classic.html"];
+
 /**
  * @type {import('esbuild').Plugin}
  */
@@ -49,11 +70,12 @@ const copyHtmlPlugin = {
   name: "copy-html-plugin",
   setup(build) {
     build.onEnd(() => {
-      const src = path.join(__dirname, "src", "webview", "bioviewer.html");
-      const dest = path.join(__dirname, "dist", "webview", "bioviewer.html");
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.copyFileSync(src, dest);
-      console.log("Copied bioviewer.html to dist/webview/");
+      const destDir = path.join(__dirname, "dist", "webview");
+      fs.mkdirSync(destDir, { recursive: true });
+      for (const template of WEBVIEW_TEMPLATES) {
+        fs.copyFileSync(path.join(__dirname, "src", "webview", template), path.join(destDir, template));
+      }
+      console.log("Copied webview templates to dist/webview/");
     });
   }
 };
@@ -73,19 +95,20 @@ async function main() {
     plugins: [
       createProblemMatcherPlugin("extension"),
       copyHtmlPlugin,
+      copyMolstarPlugin,
       copyResourcesPlugin
     ]
   });
 
   const webviewContext = await esbuild.context({
-    entryPoints: ["src/webview/main.tsx"],
+    entryPoints: { app: "src/webview/main.tsx", classic: "src/webview/classic.ts" },
     bundle: true,
     format: "iife",
     minify: production,
     sourcemap: !production,
     platform: "browser",
     target: ["es2022"],
-    outfile: "dist/webview/app.js",
+    outdir: "dist/webview",
     logLevel: "silent",
     plugins: [createProblemMatcherPlugin("webview")],
     define: {

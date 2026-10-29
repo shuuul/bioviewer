@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Studio } from "@molstudio/react";
 import type { ViewerSettings, WebviewConfig } from "../shared/webviewProtocol";
-import { postToExtension, useExtensionBridge } from "./hooks/useExtensionBridge";
 import { useVsCodeTheme } from "./hooks/useVsCodeTheme";
+import { postToExtension, type ExtensionBridge } from "./services/extensionBridge";
 
-export function App({ config }: { config: WebviewConfig }) {
+export function App({ config, bridge }: { config: WebviewConfig; bridge: ExtensionBridge }) {
   const theme = useVsCodeTheme();
-  const bridge = useExtensionBridge();
   const [settings, setSettings] = useState(config.settings);
 
+  useEffect(() => {
+    if (settings !== config.settings) {
+      postToExtension({ command: "updateSettings", settings });
+    }
+  }, [settings, config.settings]);
+
   const update = (change: Partial<ViewerSettings>): void => {
-    const next = { ...settings, ...change };
-    setSettings(next);
-    postToExtension({ command: "updateSettings", settings: next });
+    setSettings((current) => ({ ...current, ...change }));
   };
 
   return (
@@ -23,8 +26,8 @@ export function App({ config }: { config: WebviewConfig }) {
       locale={settings.locale ?? config.displayLanguage}
       onLocaleChange={(locale) => update({ locale })}
       onOpenFile={() => postToExtension({ command: "openFiles" })}
-      onReady={bridge.attach}
-      onError={(error) => postToExtension({ command: "error", error: error.message })}
+      onReady={(studio) => bridge.attach(studio)}
+      onError={(error) => bridge.reportError(error)}
       saveFile={bridge.saveFile}
     />
   );

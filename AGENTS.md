@@ -80,7 +80,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 ### Release Management
 - `npm run version` - Generate changelog and bump version using commit-and-tag-version
-- To publish a release, push a tag that matches `package.json` version after the release commit is on `origin/master`: `VERSION=$(node -p "require('./package.json').version"); git tag "v$VERSION"; git push origin "v$VERSION"`. The `v*` tag triggers the GitHub Release VSIX upload and marketplace publish workflows.
+- To publish a release, push a tag that matches `package.json` version after the release commit is on `origin/master`: `VERSION=$(node -p "require('./package.json').version"); git tag "v$VERSION"; git push origin "v$VERSION"`. The `v*` tag triggers `.github/workflows/release.yml`, which packages the VSIX once and uploads it to the GitHub Release, the VS Code Marketplace and Open VSX.
 - When updating the extension version (manual or scripted), automatically update `CHANGELOG.md` in the same change.
 - Update `CHANGELOG.md` for every user-visible behavior change, format support change, command/menu change, or documented workflow change, even when the extension version is not bumped.
 - Keep `package.json` `engines.vscode` aligned with the current Cursor VS Code Extension API (`^1.128.0`).
@@ -104,10 +104,11 @@ This file provides guidance to coding agents when working with code in this repo
 - Uses a shared `BioViewer` output channel and disposes it via `context.subscriptions`
 
 **Webview Panel Management (`src/panels/BioViewerPanel.ts`)**
-- Singleton pattern for managing Mol* viewer instances
+- One instance per webview tab; `currentPanel` tracks the most recently active tab for the "add to current tab" commands
 - Handles secure webview communication with message filtering
 - Implements ready-state management and correlated load acknowledgements; commands wait for Mol* completion and reject failed loads
 - Injects webview asset URIs, security context (CSP, nonces) and the initial `WebviewConfig` (persisted viewer settings + VS Code display language)
+- Chooses the viewer from the `bioviewer.viewer` setting (`studio` → `bioviewer.html` + `app.js`; `classic` → `classic.html`, Mol*'s prebuilt `dist/molstar/molstar.js` and `classic.js`) and shows a one-time notification (`globalState` flag) the first time the studio viewer opens
 - Persists viewer settings (language, custom colors) in `globalState`, saves exported images via `showSaveDialog`, and forwards the viewer's "Open file" action to `bioviewer.addFiles`
 
 **Command Modules (`src/commands/*.ts`)**
@@ -116,51 +117,53 @@ This file provides guidance to coding agents when working with code in this repo
 - `fileTypes.ts`: supported extension list, open dialog filters, supported-filename matching, file format/command mapping
 - `types.ts`: shared command argument typings
 
-**React Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/hooks/*`, `src/webview/services/*`)**
+**React Webview (`src/webview/main.tsx`, `src/webview/App.tsx`, `src/webview/classic.ts`, `src/webview/hooks/*`, `src/webview/services/*`)**
 - The UI is `<Studio>` from the published `@molstudio/react` package (Mol* v5.13.1 via `@molstudio/core`); BioViewer only supplies theme, locale, settings and `saveFile`
-- `hooks/useExtensionBridge.ts`: extension messaging, queues load requests until the viewer is mounted, correlates image saves
+- `services/extensionBridge.ts`: extension messaging for both viewers: runs loads once a viewer is attached, reports startup failures (`startupFailed` rejects the panel's readiness), correlates image saves
+- `classic.ts` + `services/classicBackend.ts`: the classic viewer entry; adapts Mol*'s prebuilt `Viewer` (`window.molstar`) to the same `ViewerBackend` the load queue uses
 - `hooks/useVsCodeTheme.ts`: maps the VS Code body theme class to the Studio theme
-- `services/viewerController.ts`: serial load queue, base64/gzip decoding, CMM markers via Mol*'s PLY reader
+- `services/viewerController.ts`: `ViewerBackend` interface and the serial load queue, gzip decoding, CMM markers via Mol*'s PLY reader
 - Type-checked by `src/webview/tsconfig.json` (bundler resolution, since `@molstudio/*` is ESM-only); the root `tsconfig.json` excludes `src/webview`
 - Change viewer UI behavior in the molstudio repository and publish a new version instead of patching it here
 
 ### Data Flow Architecture
 
 1. **User Interaction** → VS Code commands (Command Palette/Context Menu)
-2. **File Processing** → Extension reads file, checks size, converts to appropriate format
+2. **File Processing** → Extension reads the file (prefetching the next one in a batch) and, in remote sessions, gzips uncompressed files over 1 MB
 3. **Message Passing** → Extension sends structured data to webview via postMessage
 4. **Mol* Loading** → Webview processes commands and loads data through MolStudio
 5. **Feedback Loop** → Webview returns a correlated success/failure result after loading; the extension settles the command and reports batch counts
 
 ### File Format Handling
 
-**Structure and Volume/Map Files**: Read as binary and converted to base64; the webview decodes structures to text (Mol* would read bytes as BinaryCIF) and passes maps as bytes, labeled by filename
+**Structure and Volume/Map Files**: Read as bytes and posted as a `Uint8Array` (VS Code transfers typed arrays without re-encoding); the webview decodes structures to text (Mol* would read bytes as BinaryCIF) and passes maps as bytes, labeled by filename
 **Compressed Files (.gz)**: Automatically detected and decompressed in browser for bandwidth efficiency
 **Database Loading**: `MolStudio.loadPdb/loadAlphaFoldDb/loadEmdb` (PDBe, AlphaFold DB, EMDB)
 
 ### Memory Management Strategy
 
-- File size logging for files >50MB (loading proceeds without a confirmation dialog)
+- File sizes are logged when read; there is no size confirmation dialog
 - Browser-side gzip decompression for minimal network transfer (ideal for remote SSH scenarios)
 - Truncated logging to prevent console spam with large file content
 
 ### Build System
 
 **esbuild Configuration**:
-- Bundles extension code into `dist/extension.js` and React webview code into `dist/webview/app.js` + `app.css`
+- Bundles extension code into `dist/extension.js`, the React webview into `dist/webview/app.js` + `app.css`, and the classic viewer entry into `dist/webview/classic.js` + `classic.css`
 - Bundles the Mol* modules MolStudio imports into `app.js` and the MolStudio stylesheet into `app.css` (no separate Mol* runtime, no CDN)
-- Copies webview HTML template and resources to dist/
+- Copies both webview HTML templates, Mol*'s prebuilt viewer (`molstar.js`, `molstar.css` → `dist/molstar/`, classic viewer only) and resources to dist/
 - Supports watch mode for development with problem matcher integration
 
 **Key Build Plugins**:
-- `copyHtmlPlugin` - Copies webview template with placeholder replacement
+- `copyHtmlPlugin` - Copies the studio and classic webview templates (placeholders are filled by the panel)
+- `copyMolstarPlugin` - Copies Mol*'s prebuilt viewer for the classic viewer
 - `copyResourcesPlugin` - Copies static assets (icons, etc.)
 
 ### Error Handling Patterns
 
 - **Webview Communication**: Filters undefined commands and invalid messages
-- **File Loading**: Graceful degradation with user feedback for unsupported formats
-- **Large Files**: Check and log file size before processing; files larger than 50 MB load without a confirmation dialog
+- **File Loading**: Each file in a batch settles separately; the command reports failed files and counts
+- **Large Files**: Sizes are logged when read; files load without a confirmation dialog
 - **API Failures**: Comprehensive error reporting with specific failure reasons
 
 ## Logging Conventions
@@ -188,7 +191,6 @@ All extension-side logs follow these rules:
 ### Development Notes
 
 - Use the shared `BioViewer` output channel and `appendLine()` for extension logs
-- Always check file size before processing with `vscode.workspace.fs.stat()`
 - Test with large files (>50MB) to verify memory handling
 - Webview debugging available in VS Code's Output panel ("BioViewer" channel)
 - Structure names from CIF files may override custom labels - this is expected Mol* behavior

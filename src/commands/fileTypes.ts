@@ -1,75 +1,73 @@
 import type { FileLoadCommand } from "../shared/webviewProtocol";
 
-export const SUPPORTED_EXTENSIONS = [
-  "pdb",
-  "cif",
-  "mmcif",
-  "mcif",
-  "ent",
-  "map",
-  "mrc",
-  "ccp4",
-  "sdf",
-  "sd",
-  "mol",
-  "mol2",
-  "pdbqt",
-  "cmm"
-] as const;
+interface FileKind {
+  group: string;
+  command: FileLoadCommand;
+  /** Mol* format per extension. Every extension also opens with a `.gz` suffix. */
+  formats: Record<string, string>;
+}
+
+// Keep the extension lists in sync with the explorer menu `when` clauses in package.json.
+const FILE_KINDS: FileKind[] = [
+  {
+    group: "Structure Files",
+    command: "loadStructure",
+    formats: { pdb: "pdb", ent: "pdb", cif: "mmcif", mmcif: "mmcif", mcif: "mmcif" },
+  },
+  {
+    group: "Volume/Density Maps",
+    command: "loadVolume",
+    formats: { map: "ccp4", mrc: "ccp4", ccp4: "ccp4" },
+  },
+  {
+    group: "Small Molecules",
+    command: "loadStructure",
+    formats: { sdf: "sdf", sd: "sdf", mol: "mol", mol2: "mol2", pdbqt: "pdbqt" },
+  },
+  {
+    group: "Marker Files",
+    command: "loadMarkers",
+    formats: { cmm: "cmm" },
+  },
+];
+
+const SUPPORTED_EXTENSIONS = FILE_KINDS.flatMap((kind) => Object.keys(kind.formats));
 
 export interface FileLoadConfig {
-  format: string;
   command: FileLoadCommand;
+  format: string;
+  /** File name without its format extension and `.gz` suffix. */
+  label: string;
+  isCompressed: boolean;
+}
+
+/** Resolves how to load `name.ext` or `name.ext.gz`; null when the format is unsupported. */
+export function getFileConfig(fileName: string): FileLoadConfig | null {
+  const isCompressed = fileName.toLowerCase().endsWith(".gz");
+  const base = isCompressed ? fileName.slice(0, -3) : fileName;
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0) {
+    return null;
+  }
+  const extension = base.slice(dot + 1).toLowerCase();
+  for (const kind of FILE_KINDS) {
+    const format = kind.formats[extension];
+    if (format) {
+      return { command: kind.command, format, label: base.slice(0, dot), isCompressed };
+    }
+  }
+  return null;
 }
 
 export function isSupportedFileName(fileName: string): boolean {
-  const lowerName = fileName.toLowerCase();
-  return SUPPORTED_EXTENSIONS.some(
-    (extension) =>
-      lowerName.endsWith(`.${extension}`) ||
-      lowerName.endsWith(`.${extension}.gz`),
-  );
+  return getFileConfig(fileName) !== null;
 }
 
 export function buildFileFilters(): Record<string, string[]> {
-  return {
-    "All Supported Files": SUPPORTED_EXTENSIONS.flatMap((extension) => [extension, `${extension}.gz`]),
-    "Structure Files": ["pdb", "cif", "mmcif", "mcif", "ent"].flatMap((extension) => [extension, `${extension}.gz`]),
-    "Volume/Density Maps": ["map", "mrc", "ccp4"].flatMap((extension) => [extension, `${extension}.gz`]),
-    "Small Molecules": ["sdf", "sd", "mol", "mol2", "pdbqt"].flatMap((extension) => [extension, `${extension}.gz`]),
-    "Marker Files": ["cmm", "cmm.gz"]
-  };
-}
-
-export function getFileConfig(extension: string): FileLoadConfig | null {
-  let actualExtension = extension.toLowerCase();
-  if (actualExtension.endsWith(".gz")) {
-    actualExtension = actualExtension.slice(0, -3);
+  const withGzip = (extensions: string[]) => extensions.flatMap((extension) => [extension, `${extension}.gz`]);
+  const filters: Record<string, string[]> = { "All Supported Files": withGzip(SUPPORTED_EXTENSIONS) };
+  for (const kind of FILE_KINDS) {
+    filters[kind.group] = withGzip(Object.keys(kind.formats));
   }
-
-  if ([".pdb", ".ent"].includes(actualExtension)) {
-    return { format: "pdb", command: "loadStructure" };
-  }
-
-  if ([".cif", ".mmcif", ".mcif"].includes(actualExtension)) {
-    return { format: "mmcif", command: "loadStructure" };
-  }
-
-  if ([".map", ".mrc", ".ccp4"].includes(actualExtension)) {
-    return { format: "ccp4", command: "loadVolume" };
-  }
-
-  if ([".sdf", ".sd"].includes(actualExtension)) {
-    return { format: "sdf", command: "loadStructure" };
-  }
-
-  if ([".mol", ".mol2", ".pdbqt"].includes(actualExtension)) {
-    return { format: actualExtension.slice(1), command: "loadStructure" };
-  }
-
-  if ([".cmm"].includes(actualExtension)) {
-    return { format: "cmm", command: "loadMarkers" };
-  }
-
-  return null;
+  return filters;
 }

@@ -7,13 +7,17 @@ import {
 
 suite("BioViewer File Types Test Suite", () => {
     test("Should recognize CMM marker files", () => {
-        assert.deepStrictEqual(getFileConfig(".cmm"), {
+        assert.deepStrictEqual(getFileConfig("sites.cmm"), {
+            command: "loadMarkers",
             format: "cmm",
-            command: "loadMarkers"
+            label: "sites",
+            isCompressed: false
         });
-        assert.deepStrictEqual(getFileConfig(".cmm.gz"), {
+        assert.deepStrictEqual(getFileConfig("sites.cmm.gz"), {
+            command: "loadMarkers",
             format: "cmm",
-            command: "loadMarkers"
+            label: "sites",
+            isCompressed: true
         });
     });
 
@@ -23,7 +27,10 @@ suite("BioViewer File Types Test Suite", () => {
             ["mol2", "mol2"], ["pdbqt", "pdbqt"]
         ]) {
             for (const suffix of [`.${extension}`, `.${extension}.gz`, `.${extension.toUpperCase()}.GZ`]) {
-                assert.deepStrictEqual(getFileConfig(suffix), { format, command: "loadStructure" });
+                const config = getFileConfig(`ligand${suffix}`);
+                assert.strictEqual(config?.format, format);
+                assert.strictEqual(config?.command, "loadStructure");
+                assert.strictEqual(config?.label, "ligand");
             }
         }
     });

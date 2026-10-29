@@ -5,10 +5,18 @@ All notable changes to this project will be documented in this file. See [commit
 ## Unreleased
 
 - feat: replace the Mol* control panels with the MolStudio interface (`@molstudio/react`): an objects list, a per-object inspector for representation, color, opacity and focus, a sequence panel, and a viewport toolbar. Panels float over the viewer and size to their content; the inspector appears only while an object is selected (Escape or a click on empty space dismisses it), a toolbar button hides all panels, and narrow panels switch to a compact layout automatically. The viewer follows the VS Code light/dark theme and display language, and remembers the chosen language and custom colors across tabs and sessions.
+- feat: the `bioviewer.viewer` setting switches new tabs back to the classic Mol* viewer (`classic`) or keeps the new interface (`studio`, the default). The first time the new viewer opens, a notification explains the change and offers to switch.
 - feat: export publication images (PNG, TIFF, JPEG) at a chosen size and PPI; files are saved through the VS Code save dialog.
 - feat: the viewer's "+" menu opens files through `BioViewer: Add Files to Current Tab`.
 - fix: structure files that parse to no atoms now fail their load instead of opening an empty structure.
-- perf: bundle only the Mol* modules the viewer uses; the webview JavaScript shrinks from 5.3 MB (Mol*'s prebuilt viewer) to 3.3 MB, and the content security policy no longer allows `unsafe-eval`.
+- fix: cancelling the image save dialog no longer shows an error.
+- fix: when the viewer fails to start, commands fail right away with the reason instead of waiting 30 seconds for a ready signal.
+- perf: files are posted to the viewer as raw bytes instead of base64 text, which cuts transfer size by a quarter and removes the ~400 MB string limit for large maps; exported images return the same way.
+- perf: in Remote SSH and other remote sessions, uncompressed files over 1 MB are gzipped on the remote host before they are sent to the viewer, which unpacks them locally.
+- perf: when loading several files, the next file is read from disk while the viewer parses the current one; the status bar shows which file is loading.
+- docs: new README screenshots of a cryo-EM map with its fitted model, a protein–RNA–DNA complex, and a ligand in its binding pocket.
+- ci: one release workflow packages the VSIX once and publishes that file to the GitHub Release, the VS Code Marketplace and Open VSX.
+- perf: the new viewer bundles only the Mol* modules it uses; its webview JavaScript is 3.3 MB instead of Mol*'s 5.3 MB prebuilt viewer, and its content security policy no longer allows `unsafe-eval`. The classic viewer still loads Mol*'s prebuilt viewer.
 
 ## [0.4.1](https://github.com/shuuul/bioviewer/compare/v0.4.0...v0.4.1) (2026-10-25)
 

@@ -39,13 +39,6 @@
     "electron microscopy",
     "cryo-em"
   ],
-  "activationEvents": [
-    "onCommand:bioviewer.openFromDatabase",
-    "onCommand:bioviewer.openFiles",
-    "onCommand:bioviewer.openFolder",
-    "onCommand:bioviewer.addFiles",
-    "onCommand:bioviewer.addFolder"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -70,6 +63,24 @@
         "title": "BioViewer: Add Folder to Current Tab"
       }
     ],
+    "configuration": {
+      "title": "BioViewer",
+      "properties": {
+        "bioviewer.viewer": {
+          "type": "string",
+          "enum": [
+            "studio",
+            "classic"
+          ],
+          "enumDescriptions": [
+            "The redesigned viewer: an objects list and a display panel for the selected object.",
+            "The classic Mol* viewer with its full plugin interface."
+          ],
+          "default": "studio",
+          "markdownDescription": "Viewer interface for BioViewer tabs. Applies to tabs opened after the change."
+        }
+      }
+    },
     "menus": {
       "explorer/context": [
         {
@@ -111,7 +122,6 @@
     "check-types": "npm run tsc7 -- --noEmit && npm run tsc7 -- --noEmit -p src/webview",
     "lint": "eslint src",
     "test": "vscode-test",
-    "prepare": "npm run compile",
     "clean": "rm -rf dist out releases/*.vsix",
     "build:vsix": "npm run clean && npm run compile && mkdir -p releases && vsce package --out releases/bioviewer.vsix",
     "test:vsix": "npm run build:vsix && code --install-extension releases/bioviewer.vsix"

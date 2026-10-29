@@ -25,3 +25,8 @@ CONTRIBUTING.md
 
 # Source maps (large, not needed at runtime)
 dist/**/*.map
+
+# Repository-only content
+.claude/**
+docs/**
+releases/**

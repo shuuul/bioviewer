@@ -141,3 +141,43 @@ suite("BioViewer Example Files Test Suite", () => {
         });
     });
 });
+
+suite("BioViewer Classic Viewer Test Suite", () => {
+    const timeout = 60000;
+    const settings = () => vscode.workspace.getConfiguration("bioviewer");
+
+    suiteSetup(async function(this: Mocha.Context) {
+        this.timeout(timeout);
+        await ensureExtensionActivated();
+        await resetUiState();
+        await settings().update("viewer", "classic", vscode.ConfigurationTarget.Global);
+    });
+
+    suiteTeardown(async function(this: Mocha.Context) {
+        this.timeout(timeout);
+        await resetUiState();
+        await settings().update("viewer", undefined, vscode.ConfigurationTarget.Global);
+    });
+
+    test("Should load maps, structures, ligands and markers in the classic viewer", async function(this: Mocha.Context) {
+        this.timeout(timeout * 2);
+        const files = ["0004_unified_apix2.mrc", "6GIQ_ba1.cif", "ADP_ideal.sdf", "blob_1_NDP_1_prompt.cmm"];
+        await vscode.commands.executeCommand("bioviewer.openFiles", files.map((file) => getExampleUri(file)));
+    });
+
+    test("Should reject structure input that produces no model in the classic viewer", async function(this: Mocha.Context) {
+        this.timeout(timeout);
+        const root = vscode.Uri.file(path.join(os.tmpdir(), `bioviewer-classic-empty-${Date.now()}`));
+        await vscode.workspace.fs.createDirectory(root);
+        const invalid = vscode.Uri.joinPath(root, "empty.sdf");
+        await vscode.workspace.fs.writeFile(invalid, Buffer.from("not a molecular structure\n"));
+        try {
+            await assert.rejects(
+                async () => vscode.commands.executeCommand("bioviewer.openFiles", [invalid]),
+                /Failed to load 1 of 1 file\(s\).*empty\.sdf/,
+            );
+        } finally {
+            await vscode.workspace.fs.delete(root, { recursive: true });
+        }
+    });
+});

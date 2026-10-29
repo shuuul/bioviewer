@@ -1,27 +1,18 @@
 export type DatabaseCommand = "loadPdb" | "loadAlphaFoldDb" | "loadEmdb";
 export type FileLoadCommand = "loadStructure" | "loadVolume" | "loadMarkers";
-export type ExtensionCommand = DatabaseCommand | FileLoadCommand;
 
-type LoadPayload =
+export interface FileLoad {
+  command: FileLoadCommand;
+  /** Raw file bytes; VS Code transfers typed arrays over postMessage without re-encoding. */
+  data: Uint8Array;
+  format: string;
+  isCompressed: boolean;
+  label: string;
+}
+
+export type LoadPayload =
   | { command: DatabaseCommand; accession: string }
-  | {
-      [Command in "loadStructure" | "loadVolume"]: {
-        command: Command;
-        data: string;
-        format: string;
-        isBinary: boolean;
-        isCompressed: boolean;
-        label: string;
-      }
-    }["loadStructure" | "loadVolume"]
-  | {
-      command: "loadMarkers";
-      data: string;
-      format: "cmm";
-      isBinary: boolean;
-      isCompressed: boolean;
-      label: string;
-    };
+  | FileLoad;
 
 export type LoadMessage = LoadPayload & { requestId: string };
 
@@ -46,12 +37,13 @@ export interface WebviewConfig {
 
 export type WebviewToExtensionMessage =
   | { command: "ready" }
+  | { command: "startupFailed"; error: string }
   | { command: "error"; error: string }
   | { command: "info"; info: string }
   | { command: "debug"; message: string }
   | { command: "loadResult"; requestId: string; success: true }
   | { command: "loadResult"; requestId: string; success: false; error: string }
-  | { command: "saveFile"; requestId: string; filename: string; data: string }
+  | { command: "saveFile"; requestId: string; filename: string; data: Uint8Array }
   | { command: "updateSettings"; settings: ViewerSettings }
   | { command: "openFiles" };
 
@@ -82,6 +74,7 @@ export function isWebviewToExtensionMessage(value: unknown): value is WebviewToE
     case "ready":
       return true;
     case "error":
+    case "startupFailed":
       return hasString(value, "error");
     case "info":
       return hasString(value, "info");
@@ -93,7 +86,7 @@ export function isWebviewToExtensionMessage(value: unknown): value is WebviewToE
         (value.success === false && hasString(value, "error"))
       );
     case "saveFile":
-      return hasRequestId(value) && hasString(value, "filename") && hasString(value, "data");
+      return hasRequestId(value) && hasString(value, "filename") && value.data instanceof Uint8Array;
     case "updateSettings":
       return isViewerSettings(value.settings);
     case "openFiles":
@@ -116,10 +109,9 @@ export function isExtensionToWebviewMessage(value: unknown): value is ExtensionT
     case "loadStructure":
     case "loadVolume":
     case "loadMarkers":
-      return hasString(value, "data") &&
+      return value.data instanceof Uint8Array &&
         hasString(value, "format") &&
         (value.command !== "loadMarkers" || value.format === "cmm") &&
-        typeof value.isBinary === "boolean" &&
         typeof value.isCompressed === "boolean" &&
         hasString(value, "label");
     case "saveResult":
