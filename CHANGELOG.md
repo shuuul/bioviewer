@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## Unreleased
+
+- ci: GitHub Release notes group the CHANGELOG entries under Features, Bug Fixes, Performance and other headings by their type prefix.
+
 ## [0.5.1](https://github.com/shuuul/bioviewer/compare/v0.5.0...v0.5.1) (2026-10-29)
 
 - fix: update MolStudio to 0.1.3: the viewer now starts where WebGL is only software-rendered, such as virtual machines and remote desktops, instead of failing with "could not create a WebGL context".

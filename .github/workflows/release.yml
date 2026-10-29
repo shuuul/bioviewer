@@ -48,19 +48,8 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: vsix
-      - name: Extract release notes from CHANGELOG.md
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          # The section runs from this version's heading to the next "## " heading.
-          awk -v heading="## [$version]" '
-            index($0, heading) == 1 { found = 1; next }
-            found && /^## / { exit }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
-          if ! grep -q '[^[:space:]]' release-notes.md; then
-            echo "::error::CHANGELOG.md has no section for $version"
-            exit 1
-          fi
+      - name: Build release notes from CHANGELOG.md
+        run: node .github/scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
       - uses: softprops/action-gh-release@v3
         with:
           body_path: release-notes.md
