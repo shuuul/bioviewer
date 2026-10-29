@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## Unreleased
+
+- fix: update MolStudio to 0.1.3: the viewer now starts where WebGL is only software-rendered, such as virtual machines and remote desktops, instead of failing with "could not create a WebGL context".
+
 ## [0.5.0](https://github.com/shuuul/bioviewer/compare/v0.4.1...v0.5.0) (2026-10-29)
 
 - feat: replace the Mol* control panels with the MolStudio interface (`@molstudio/react`): an objects list, a per-object inspector for representation, color, opacity and focus, a sequence panel, and a viewport toolbar. Panels float over the viewer and size to their content; the inspector appears only while an object is selected (Escape or a click on empty space dismisses it), a toolbar button hides all panels, and narrow panels switch to a compact layout automatically. The viewer follows the VS Code light/dark theme and display language, and remembers the chosen language and custom colors across tabs and sessions.
