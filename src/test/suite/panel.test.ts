@@ -81,6 +81,8 @@ suite("BioViewer Panel Lifecycle", () => {
         instance.dispose();
         instance = createPanel("classic");
         assert.match(webview.html, /molstar\/molstar\.js/);
+        assert.match(webview.html, /data-light="[^"]*molstar\/light\.css"/);
+        assert.match(webview.html, /data-dark="[^"]*molstar\/dark\.css"/);
         assert.match(webview.html, /webview\/classic\.js/);
         assert.doesNotMatch(webview.html, /\$\{/);
     });
@@ -143,5 +145,29 @@ suite("BioViewer Panel Lifecycle", () => {
         assert.strictEqual(instance.isLoading, false);
         assert.strictEqual(BioViewerPanel.currentPanel, undefined);
         await assert.rejects(instance.loadContent({ command: "loadPdb", accession: "6giq" }), /panel was closed/);
+    });
+
+    test("The new viewer notification is shown once across panels", async () => {
+        const stored = new Map<string, unknown>();
+        const globalState = {
+            get: (key: string) => stored.get(key),
+            update: async (key: string, value: unknown) => { stored.set(key, value); },
+        } as unknown as PanelContext["globalState"];
+        const window = vscode.window as { showInformationMessage: unknown };
+        const original = window.showInformationMessage;
+        let shown = 0;
+        window.showInformationMessage = async () => { shown++; return undefined; };
+        const panels: BioViewerPanel[] = [];
+        try {
+            for (let i = 0; i < 3; i++) {
+                panels.push(BioViewerPanel.create({ extensionUri, globalState }, "intro test", output));
+            }
+            await new Promise((resolve) => setImmediate(resolve));
+            assert.strictEqual(shown, 1);
+            assert.strictEqual(stored.get("bioviewer.studioIntroShown"), true);
+        } finally {
+            window.showInformationMessage = original;
+            panels.forEach((panel) => panel.dispose());
+        }
     });
 });
