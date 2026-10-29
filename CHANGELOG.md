@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file. See [commit
 ## Unreleased
 
 - ci: GitHub Release notes group the CHANGELOG entries under Features, Bug Fixes, Performance and other headings by their type prefix.
+- ci: the VSIX attached to a GitHub Release is named with its version (`bioviewer-<version>.vsix`) instead of `bioviewer.vsix`.
 
 ## [0.5.1](https://github.com/shuuul/bioviewer/compare/v0.5.0...v0.5.1) (2026-10-29)
 
