@@ -62,6 +62,25 @@ const copyMolstarPlugin = {
   }
 };
 
+/** The wasm surface engine the studio viewer fetches; it is bundled at dist/molstudio/. */
+const MOLSTUDIO_WASM_ENGINE = {
+  source: path.join("node_modules", "@molstudio", "core", "dist", "assets", "molstudio-wasm-engine.wasm"),
+  destination: path.join("dist", "molstudio", "molstudio-wasm-engine.wasm")
+};
+
+const copyMolstudioWasmPlugin = {
+  name: "copy-molstudio-wasm-plugin",
+  setup(build) {
+    build.onEnd(() => {
+      const source = path.join(__dirname, MOLSTUDIO_WASM_ENGINE.source);
+      const destination = path.join(__dirname, MOLSTUDIO_WASM_ENGINE.destination);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.copyFileSync(source, destination);
+      console.log("Copied the MolStudio wasm engine to dist/molstudio/");
+    });
+  }
+};
+
 const WEBVIEW_TEMPLATES = ["bioviewer.html", "classic.html"];
 
 /**
@@ -97,8 +116,25 @@ async function main() {
       createProblemMatcherPlugin("extension"),
       copyHtmlPlugin,
       copyMolstarPlugin,
-      copyResourcesPlugin
+      copyResourcesPlugin,
+      copyMolstudioWasmPlugin
     ]
+  });
+
+  // The studio viewer starts this worker with `new Worker(url, { type: "module" })`;
+  // bundling it keeps it a single file that imports nothing at runtime.
+  const studioWorkerContext = await esbuild.context({
+    entryPoints: [path.join(__dirname, "node_modules", "@molstudio", "core", "dist", "compute", "worker.js")],
+    bundle: true,
+    format: "esm",
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: "browser",
+    target: ["es2022"],
+    outfile: "dist/webview/molstudio-worker.js",
+    logLevel: "silent",
+    plugins: [createProblemMatcherPlugin("studio worker")]
   });
 
   const webviewContext = await esbuild.context({
@@ -118,12 +154,12 @@ async function main() {
   });
 
   if (watch) {
-    await Promise.all([extensionContext.watch(), webviewContext.watch()]);
+    await Promise.all([extensionContext.watch(), studioWorkerContext.watch(), webviewContext.watch()]);
     return;
   }
 
-  await Promise.all([extensionContext.rebuild(), webviewContext.rebuild()]);
-  await Promise.all([extensionContext.dispose(), webviewContext.dispose()]);
+  await Promise.all([extensionContext.rebuild(), studioWorkerContext.rebuild(), webviewContext.rebuild()]);
+  await Promise.all([extensionContext.dispose(), studioWorkerContext.dispose(), webviewContext.dispose()]);
 }
 
 main().catch((error) => {

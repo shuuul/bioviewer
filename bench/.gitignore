@@ -1,0 +1,7 @@
+fixtures/*.map
+fixtures/*.map.gz
+fixtures/*.part
+out/
+node_modules/
+results/previous-session/
+*.log

@@ -1,0 +1,13 @@
+{
+  "name": "bioviewer-bench-baseline",
+  "private": true,
+  "type": "module",
+  "description": "Pinned pre-wasm dependency set (@molstudio/core 0.1.4) for the benchmark harness",
+  "dependencies": {
+    "@molstudio/core": "0.1.4",
+    "@molstudio/react": "0.1.4",
+    "molstar": "5.13.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

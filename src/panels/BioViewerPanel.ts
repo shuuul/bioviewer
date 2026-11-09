@@ -514,6 +514,10 @@ export class BioViewerPanel {
         const config: WebviewConfig = {
           settings: this._readSettings(),
           displayLanguage: vscode.env.language,
+          surfaceEngine: {
+            wasmUrl: asset("molstudio", "molstudio-wasm-engine.wasm"),
+            workerUrl: asset("webview", "molstudio-worker.js"),
+          },
         };
         values.appCssUri = asset("webview", "app.css");
         values.appJsUri = asset("webview", "app.js");

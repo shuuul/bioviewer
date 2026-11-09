@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-11-09T13:49:14.451Z",
+  "maps": [
+    {
+      "name": "emd_10275",
+      "accession": "EMD-10275",
+      "file": "emd_10275.map.gz",
+      "dims": [
+        300,
+        300,
+        300
+      ],
+      "voxels": 27000000,
+      "compressedBytes": 8541950,
+      "uncompressedBytes": 108001024,
+      "sha256": "33d082010adfe3430aa0f31431757c35705037c39f08e997897393fa5b0b7e0b",
+      "sourceUrl": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-10275/map/emd_10275.map.gz"
+    },
+    {
+      "name": "emd_10275_nonperiodic",
+      "accession": "EMD-10275 (header-modified copy)",
+      "file": "emd_10275_nonperiodic.map.gz",
+      "dims": [
+        300,
+        300,
+        300
+      ],
+      "voxels": 27000000,
+      "compressedBytes": 9564322,
+      "uncompressedBytes": 108001024,
+      "sha256": "e9341dbbe1f8dabb97f077948c5579509ce8f86ecb55a85c4510bd05c3a2eeec",
+      "derivedFrom": "emd_10275",
+      "modifications": [
+        "NC/NR/NS set to 299 (one voxel short of the 300³ grid) so Mol* reports periodicity \"none\"",
+        "ISPG set to 0 and NSYMBT set to 0 (no spacegroup / symmetry records)",
+        "voxel data and grid dimensions unchanged; cell stays 319.5 Å"
+      ],
+      "sourceUrl": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-10275/map/emd_10275.map.gz"
+    },
+    {
+      "name": "large",
+      "accession": "EMD-55357",
+      "file": "emd_55357.map.gz",
+      "dims": [
+        512,
+        512,
+        512
+      ],
+      "voxels": 134217728,
+      "compressedBytes": 269510589,
+      "uncompressedBytes": 536871936,
+      "sha256": "f27396ac6b3172f5007375979abdf3155dd03d3059e18e784f0c737794edc859",
+      "sourceUrl": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-55357/map/emd_55357.map.gz"
+    }
+  ]
+}

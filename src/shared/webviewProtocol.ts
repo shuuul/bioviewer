@@ -29,10 +29,29 @@ export interface ViewerSettings {
   locale: string | null;
 }
 
+/** The wasm surface engine assets the studio viewer runs, served from the extension's dist/. */
+export interface SurfaceEngineConfig {
+  /** Webview URI of the wasm module. */
+  wasmUrl: string;
+  /** Webview URI of the module worker that runs the wasm engine off the main thread. */
+  workerUrl: string;
+}
+
 /** Injected into the webview HTML so the first render already uses the user's settings. */
 export interface WebviewConfig {
   settings: ViewerSettings;
   displayLanguage: string;
+  surfaceEngine: SurfaceEngineConfig;
+}
+
+/** The config is injected as an attribute, so it is parsed at the webview boundary. */
+export function isWebviewConfig(value: unknown): value is WebviewConfig {
+  return isRecord(value) &&
+    isViewerSettings(value.settings) &&
+    typeof value.displayLanguage === "string" &&
+    isRecord(value.surfaceEngine) &&
+    typeof value.surfaceEngine.wasmUrl === "string" && value.surfaceEngine.wasmUrl.length > 0 &&
+    typeof value.surfaceEngine.workerUrl === "string" && value.surfaceEngine.workerUrl.length > 0;
 }
 
 export type WebviewToExtensionMessage =

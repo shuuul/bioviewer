@@ -1,0 +1,14 @@
+{
+  "name": "bioviewer-bench-v015",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Pinned MolStudio 0.1.5 install used by the benchmark harness for the two-way comparison.",
+  "dependencies": {
+    "@molstudio/core": "0.1.5",
+    "@molstudio/react": "0.1.5",
+    "molstar": "5.13.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

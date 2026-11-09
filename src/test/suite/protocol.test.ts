@@ -1,5 +1,5 @@
 import * as assert from "assert";
-import { isExtensionToWebviewMessage, isWebviewToExtensionMessage } from "../../shared/webviewProtocol";
+import { isExtensionToWebviewMessage, isWebviewConfig, isWebviewToExtensionMessage } from "../../shared/webviewProtocol";
 
 suite("BioViewer Load Protocol", () => {
     test("Requires request identifiers and valid result payloads", () => {
@@ -11,5 +11,17 @@ suite("BioViewer Load Protocol", () => {
         assert.ok(!isWebviewToExtensionMessage({ command: "loadResult", requestId: "1", success: false }));
         assert.ok(!isWebviewToExtensionMessage({ command: "loadResult", requestId: "1", success: "true" }));
         assert.ok(!isWebviewToExtensionMessage({ command: "loadResult", success: true }));
+    });
+
+    test("The webview config requires the surface engine assets", () => {
+        const config = {
+            settings: { customColors: [], locale: null },
+            displayLanguage: "en",
+            surfaceEngine: { wasmUrl: "https://test.invalid/wasm", workerUrl: "https://test.invalid/worker.js" },
+        };
+        assert.ok(isWebviewConfig(config));
+        assert.ok(!isWebviewConfig({ ...config, surfaceEngine: { wasmUrl: config.surfaceEngine.wasmUrl } }));
+        assert.ok(!isWebviewConfig({ ...config, surfaceEngine: { ...config.surfaceEngine, workerUrl: "" } }));
+        assert.ok(!isWebviewConfig({ ...config, settings: { customColors: [] } }));
     });
 });

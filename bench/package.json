@@ -1,0 +1,15 @@
+{
+  "name": "bioviewer-bench",
+  "private": true,
+  "type": "module",
+  "description": "Headless viewer benchmark harness for @molstudio/core volume surface rendering",
+  "scripts": {
+    "baseline": "node run.mjs --project baseline",
+    "after": "node run.mjs --project after",
+    "all": "node run.mjs --project baseline --project after"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.55.0"
+  }
+}

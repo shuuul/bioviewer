@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import { Studio } from "@molstudio/react";
+import type { SurfaceEngineAssets } from "@molstudio/core";
 import type { ViewerSettings, WebviewConfig } from "../shared/webviewProtocol";
 import { useVsCodeTheme } from "./hooks/useVsCodeTheme";
 import { postToExtension, type ExtensionBridge } from "./services/extensionBridge";
 
-export function App({ config, bridge }: { config: WebviewConfig; bridge: ExtensionBridge }) {
+export function App({
+  config,
+  bridge,
+  surfaceEngine,
+}: {
+  config: WebviewConfig;
+  bridge: ExtensionBridge;
+  surfaceEngine: SurfaceEngineAssets;
+}) {
   const theme = useVsCodeTheme();
   const [settings, setSettings] = useState(config.settings);
 
@@ -29,6 +38,7 @@ export function App({ config, bridge }: { config: WebviewConfig; bridge: Extensi
       onReady={(studio) => bridge.attach(studio)}
       onError={(error) => bridge.reportError(error)}
       saveFile={bridge.saveFile}
+      studioOptions={{ surfaceEngine }}
     />
   );
 }

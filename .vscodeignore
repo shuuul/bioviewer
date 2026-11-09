@@ -28,5 +28,6 @@ dist/**/*.map
 
 # Repository-only content
 .claude/**
+bench/**
 docs/**
 releases/**
