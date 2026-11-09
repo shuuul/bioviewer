@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## Unreleased
 
+## [0.5.4](https://github.com/shuuul/bioviewer/compare/v0.5.3...v0.5.4) (2026-11-09)
+
 - feat: update MolStudio to 0.1.8. Periodic solid cryo-EM maps use Mol*'s GPU isosurface again (the same `useGpu` gate as 0.1.5); the wasm engine starts only for CPU-path visuals (wireframe, missing float textures). File loads skip the parse-time isosurface, and oversized maps downsample in-process; a 512³ grid that reduces to 256³ then stays on GPU. Hardware (ANGLE Metal): 300³ periodic solid opens at parity with 0.1.5 (~455–473 ms, no worker); iso-drag ~17 ms (same band as 0.1.5); wireframe iso ~8× (~1 s → ~120 ms); 512³ open 2.9 → 1.3 s, iso ~230–280× vs 0.1.5's ~4 s CPU mesh.
 
 ## [0.5.3](https://github.com/shuuul/bioviewer/compare/v0.5.1...v0.5.3) (2026-10-29)
