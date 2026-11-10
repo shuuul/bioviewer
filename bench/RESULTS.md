@@ -11,6 +11,9 @@ CPU path (wireframe here). Representations use Mol*'s `byte` GPU data and instan
 markers so iso updates do not allocate a per-voxel marker texture. SwiftShader / jsfallback /
 non-periodic / 0.1.6–0.1.7 runs live under `results/previous-session/` and are not ingested.
 
+These numbers were measured when `after` was `@molstudio/core@0.1.8`; the root install has
+since moved to 0.1.9 and `after` has not been re-run.
+
 ### hardware — emd10275-solid
 
 EMD-10275 full-size map, solid isosurface, three iso levels (periodic; GPU on hardware).

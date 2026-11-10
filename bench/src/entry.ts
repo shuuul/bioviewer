@@ -1,6 +1,6 @@
 // Browser-side benchmark harness for the @molstudio/core volume surface pipeline.
 // One source, bundled per project: against the pinned 0.1.5 install (bench/v015) and
-// against the root 0.1.8 install (bench/out/after). All timings use performance.now()
+// against the root 0.1.9 install (bench/out/after). All timings use performance.now()
 // in the page, so they include Mol*'s real state/build/render work.
 import { MolStudio } from '@molstudio/core';
 import { PluginStateObject as SO } from 'molstar/lib/mol-plugin-state/objects';
@@ -345,7 +345,7 @@ function volumeInfo(id: string) {
     const sessions = state.studio.sessions;
     const session = sessions?.sessionForKey?.(rootCell.transform.ref) ?? sessions?.sessionForKey?.(id);
     if (session) {
-      // 0.1.8 keeps a lazy SessionRecord that only builds an engine on the first
+      // 0.1.9 keeps a lazy SessionRecord that only builds an engine on the first
       // CPU-path visual, so a resolved engine is not implied by a session existing.
       const resolved = session.resolvedEngine ?? session.engine ?? null;
       engine = {
@@ -363,7 +363,7 @@ function volumeInfo(id: string) {
     snapshot: snapshot ? { style: snapshot.style, isoLevel: snapshot.isoLevel, gridFactor: snapshot.gridFactor ?? null, stats: snapshot.stats } : null,
     sourceDims,
     effectiveDims,
-    // Whether the parsed grid wraps: Mol*'s GPU path ignores this; 0.1.8 matches
+    // Whether the parsed grid wraps: Mol*'s GPU path ignores this; 0.1.9 matches
     // that gate. Wrap-expand stays on the CPU/wasm path.
     sourcePeriodic: source ? Volume.isPeriodic(source) : null,
     effectivePeriodic: effective ? Volume.isPeriodic(effective) : null,

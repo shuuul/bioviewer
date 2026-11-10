@@ -11,7 +11,7 @@ comparison runs in one session with the same page, CSP, scenarios and instrument
 | project | resolves | represents |
 |---|---|---|
 | `v015` | `bench/v015/node_modules` | `@molstudio/core@0.1.5`, `@molstudio/react@0.1.5`, `molstar@5.13.1` (pre-wasm: no `compute/` worker, no `assets/` wasm) |
-| `after` | repository root `node_modules` + `dist/webview/molstudio-worker.js` + `dist/molstudio/molstudio-wasm-engine.wasm` | whatever the extension currently builds and ships — now `@molstudio/core@0.1.8` (GPU path for periodic solids, in-process wasm downsample, lazy CPU engine) |
+| `after` | repository root `node_modules` + `dist/webview/molstudio-worker.js` + `dist/molstudio/molstudio-wasm-engine.wasm` | whatever the extension currently builds and ships — now `@molstudio/core@0.1.9` (the recorded results were measured on 0.1.8: GPU path for periodic solids, in-process wasm downsample, lazy CPU engine) |
 
 The 0.1.5 rows come from a pinned install rather than an archived bundle: the root
 `node_modules` moves on with every upgrade, and the point of the table is that both columns
@@ -78,7 +78,7 @@ with `BENCH_CHROME=/path/to/chrome`.
 
 ```bash
 node run.mjs --project v015  --gpu hardware        # 0.1.5 reference numbers
-node run.mjs --project after --gpu hardware        # root install (0.1.8)
+node run.mjs --project after --gpu hardware        # root install (0.1.9)
 node run.mjs --project after --scenario emd10275-solid --reps 3   # single scenario
 node report.mjs > /tmp/tables.md                   # render the two-way hardware tables
 ```
@@ -92,8 +92,8 @@ Scenarios:
 
 | scenario | fixture | iso levels | why |
 |---|---|---|---|
-| `emd10275-solid` | `emd_10275` 300³ | 1.5, 2.5, 3.5σ | periodic cryo-EM case; 0.1.8 uses Mol* GPU like 0.1.5 |
-| `emd10275-wireframe` | `emd_10275` | 1.5, 2.5, 3.5σ | wireframe/lines never uses Mol* GPU extraction (wasm on 0.1.8) |
+| `emd10275-solid` | `emd_10275` 300³ | 1.5, 2.5, 3.5σ | periodic cryo-EM case; `after` uses Mol* GPU like 0.1.5 |
+| `emd10275-wireframe` | `emd_10275` | 1.5, 2.5, 3.5σ | wireframe/lines never uses Mol* GPU extraction (wasm on `after`) |
 | `large-solid` | `large` 512³ | 2.5, 3.5, 4.5σ | packed texture exceeds `MAX_TEXTURE_SIZE/2`, and 134M voxels exceeds the 128M limit |
 
 Every rep uses a fresh page (fresh JS heap, fresh WebGL context). The driver writes
@@ -120,7 +120,7 @@ Each scenario loads one map at the default iso level, then performs the measured
 - **load** — `MolStudio.loadVolume` through the first surface geometry being ready. Depending on the
   version this includes surface-engine setup (`init` → worker `ready`: wasm instantiation, grid copy into
   the worker, `setGrid`), Mol* grid preparation, and the representation. Whether the engine started
-  during load is visible in the recorded worker message kinds and `readyAfterInitMs`. 0.1.8 skips
+  during load is visible in the recorded worker message kinds and `readyAfterInitMs`. `after` skips
   Mol*'s parse-time isosurface and downsamples oversized grids in-process; a typical periodic solid
   on hardware never constructs a `Worker`.
 - **iso change** — `MolStudio.setIsoLevel` until the representation reports new geometry, then two
@@ -151,7 +151,7 @@ The harness reports which tier actually ran, per scenario:
 - **no engine** — 0.1.5 and any run without `surfaceEngine` wiring.
 
 Engine lifecycle differs per version and must not be assumed. 0.1.5 extracts on Mol*'s GPU texture-mesh
-path where the texture fits and on Mol*'s CPU JS path otherwise, with no worker and no wasm. 0.1.8
+path where the texture fits and on Mol*'s CPU JS path otherwise, with no worker and no wasm. `after`
 uses the same GPU gate as Mol* (`useGpu`, periodicity is not a gate) and keeps the engine lazy for
 those volumes; wireframe and GPU-ineligible grids start the wasm engine. Oversized grids are
 downsampled in-process with wasm `ds_from_staging`. The harness still reports `dGeometryType` plus
