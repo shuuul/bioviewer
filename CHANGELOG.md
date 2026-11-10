@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file. See [commit
 ## Unreleased
 
 - feat: update MolStudio to 0.1.9. Failed structure and volume loads now reject after removing their partial data instead of leaving it behind, and a malformed map reports that its data could not be parsed instead of opening nothing. Loading markers can no longer be affected by later changes to the parsed file content, invalid opacity and isolevel input is rejected, the spin animation no longer throws, and image exports run one at a time.
+- fix: the studio viewer reports an unreadable injected config as a startup failure right away instead of leaving the command waiting for a ready signal.
 
 ## [0.5.4](https://github.com/shuuul/bioviewer/compare/v0.5.3...v0.5.4) (2026-11-09)
 
