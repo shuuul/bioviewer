@@ -2,6 +2,9 @@ import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
 export default [{
+    // The downloaded VS Code test host ships its own extensions' eslint.config.mjs files.
+    ignores: [".vscode-test/", "dist/", "out/", "bench/out/"],
+}, {
     files: ["**/*.{ts,tsx}"],
 }, {
     plugins: {
